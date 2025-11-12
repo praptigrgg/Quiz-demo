@@ -30,10 +30,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('{id}/delete', [QuizQuestionController::class, 'destroy'])->name('destroy');
         Route::post('replicate', [QuizQuestionController::class, 'replicate'])->name('replicate');
         Route::post('migrate', [QuizQuestionController::class, 'migrate'])->name('migrate');
+        Route::post('filter', [QuizQuestionController::class, 'filter'])->name('filter');
     });
 
     // --- EXCEL UPLOAD ---
     Route::post('quizzes-questions-excel/store', [QuizQuestionExcelController::class, 'store'])
         ->name('quizzes-questions.excel.store');
 });
-

@@ -154,7 +154,30 @@
         </a>
     </li>
 
+    {{-- User Management --}}
+    <li class="menu-item">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-user"></i>
+            <div data-i18n="User Management">User Management</div>
+        </a>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-user-pin"></i><div>Operation Teams</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-group"></i><div>Students</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-check-shield"></i><div>Roles And Permissions</div></a></li>
+        </ul>
+    </li>
 
+    {{-- Category Management --}}
+    <li class="menu-item">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-category"></i>
+            <div data-i18n="Category Management">Category Management</div>
+        </a>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-book-open"></i><div>Courses</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-clipboard"></i><div>Quizzes</div></a></li>
+        </ul>
+    </li>
 
     {{-- Course Management --}}
     <li class="menu-item">
@@ -168,7 +191,18 @@
         </ul>
     </li>
 
-
+    {{-- Live Class Management --}}
+    <li class="menu-item">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-video"></i>
+            <div data-i18n="Live Class Management">Live Class Management</div>
+        </a>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Live Classes</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><div>Schedule Live Class</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-video"></i><div>Manage Zoom</div></a></li>
+        </ul>
+    </li>
 
     {{-- Quiz Management --}}
     <li class="menu-item open">
@@ -187,7 +221,31 @@
         </ul>
     </li>
 
-   
+    {{-- User Enrollments --}}
+    <li class="menu-item">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-clipboard"></i>
+            <div data-i18n="User Enrollments">User Enrollments</div>
+        </a>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Course Enrollments List</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Quizzes Enrollments List</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Live Class Enrollments List</div></a></li>
+        </ul>
+    </li>
+
+    {{-- Notifications --}}
+    <li class="menu-item">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bxs-megaphone"></i>
+            <div data-i18n="Notifications">Notification and Flash Notices</div>
+        </a>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Push Notifications</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Flash Notices</div></a></li>
+            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Manage Notices</div></a></li>
+        </ul>
+    </li>
 </ul>
 
 <script>

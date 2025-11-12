@@ -7,6 +7,7 @@ use App\Models\QuizQuestion;
 use App\Models\QuizOption;
 use App\Models\Quiz;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class QuizQuestionController extends Controller
@@ -157,89 +158,137 @@ class QuizQuestionController extends Controller
     }
 
 public function replicate(Request $request)
-{
-    $request->validate([
-        'selectedQuestions' => 'required|string',
-        'group' => 'nullable|string',
-        'course' => 'nullable|string',
-        'section' => 'nullable|string',
-        'lesson' => 'nullable|string',
-        'quiz_id' => 'nullable|integer', // target quiz
-    ]);
+    {
+        $request->validate([
+            'selectedQuestions' => 'required|string',
+            'actionType' => 'required|string',
+        ]);
 
-    $ids = explode(',', $request->selectedQuestions);
-    $replicatedCount = 0;
+        $selectedIds = explode(',', $request->selectedQuestions);
 
-    foreach ($ids as $id) {
-        $question = QuizQuestion::with('options')->find($id);
-        if (!$question) continue;
-
-        // Duplicate the question
-        $newQuestion = $question->replicate();
-
-        // Update fields if provided
-        if ($request->quiz_id) $newQuestion->quiz_id = $request->quiz_id;
-        if ($request->group) $newQuestion->group_name = $request->group;
-        if ($request->course) $newQuestion->course = $request->course;
-        if ($request->section) $newQuestion->section = $request->section;
-        if ($request->lesson) $newQuestion->lesson = $request->lesson;
-
-        $newQuestion->save();
-
-        // Duplicate all options
-        foreach ($question->options as $option) {
-            $newQuestion->options()->create([
-                'optionText' => $option->optionText,
-                'isCorrect' => $option->isCorrect,
-            ]);
+        if (empty($selectedIds)) {
+            return response()->json(['success' => false, 'message' => 'No questions selected']);
         }
 
-        $replicatedCount++;
+        $destinationQuizId = $request->quiz_id;
+        $destinationCourse = $request->course;
+        $destinationSection = $request->section;
+        $destinationLesson = $request->lesson;
+        $destinationGroup = $request->group;
+
+        if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson || !$destinationGroup)) {
+            return response()->json(['success' => false, 'message' => 'Select either cascading destination or quiz']);
+        }
+
+        $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
+
+        DB::beginTransaction();
+        try {
+            foreach ($questions as $question) {
+                $newQuestion = $question->replicate();
+                if ($destinationQuizId) {
+                    $newQuestion->quiz_id = $destinationQuizId;
+                } else {
+                    $newQuestion->course = $destinationCourse;
+                    $newQuestion->section = $destinationSection;
+                    $newQuestion->lesson = $destinationLesson;
+                    $newQuestion->group = $destinationGroup;
+                }
+                $newQuestion->save();
+            }
+            DB::commit();
+            return response()->json(['success' => true, 'message' => count($questions).' question(s) replicated successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()]);
+        }
     }
+
+    // ----- Migrate Questions -----
+    public function migrate(Request $request)
+    {
+        $request->validate([
+            'selectedQuestions' => 'required|string',
+            'actionType' => 'required|string',
+        ]);
+
+        $selectedIds = explode(',', $request->selectedQuestions);
+
+        if (empty($selectedIds)) {
+            return response()->json(['success' => false, 'message' => 'No questions selected']);
+        }
+
+        $destinationQuizId = $request->quiz_id;
+        $destinationCourse = $request->course;
+        $destinationSection = $request->section;
+        $destinationLesson = $request->lesson;
+        $destinationGroup = $request->group;
+
+        if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson || !$destinationGroup)) {
+            return response()->json(['success' => false, 'message' => 'Select either cascading destination or quiz']);
+        }
+
+        $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
+
+        DB::beginTransaction();
+        try {
+            foreach ($questions as $question) {
+                if ($destinationQuizId) {
+                    $question->quiz_id = $destinationQuizId;
+                } else {
+                    $question->course = $destinationCourse;
+                    $question->section = $destinationSection;
+                    $question->lesson = $destinationLesson;
+                    $question->group = $destinationGroup;
+                }
+                $question->save();
+            }
+            DB::commit();
+            return response()->json(['success' => true, 'message' => count($questions).' question(s) migrated successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()]);
+        }
+    }
+public function filter(Request $request)
+{
+    $query = QuizQuestion::query();
+
+    // Apply cascading filters
+    if ($request->filled('course')) {
+        $query->where('course', $request->course);
+    }
+
+    if ($request->filled('section')) {
+        $query->where('section', $request->section);
+    }
+
+    if ($request->filled('lesson')) {
+        $query->where('lesson', $request->lesson);
+    }
+
+    if ($request->filled('group')) {
+        // ✅ FIX: your database likely uses 'group_name', not 'group'
+        $query->where('group_name', $request->group);
+    }
+
+    if ($request->filled('quiz_id')) {
+        $query->where('quiz_id', $request->quiz_id);
+    }
+
+    // ✅ FIX: select correct fields
+    $questions = $query->get([
+        'id',
+        'questionText',
+        'explanation',
+        'questionType',
+        'group_name',
+       
+    ]);
 
     return response()->json([
         'success' => true,
-        'message' => "$replicatedCount question(s) replicated successfully."
-    ]);
-}
-
-
-public function migrate(Request $request)
-{
-    $request->validate([
-        'selectedQuestions' => 'required|string',
-        'group' => 'nullable|string',
-        'course' => 'nullable|string',
-        'section' => 'nullable|string',
-        'lesson' => 'nullable|string',
-        'quiz_id' => 'nullable|integer', // target quiz
-    ]);
-
-    $ids = explode(',', $request->selectedQuestions);
-    $migratedCount = 0;
-
-    foreach ($ids as $id) {
-        $question = QuizQuestion::find($id);
-        if (!$question) continue;
-
-        $updateData = [];
-
-        if ($request->quiz_id) $updateData['quiz_id'] = $request->quiz_id;
-        if ($request->group) $updateData['group_name'] = $request->group;
-        if ($request->course) $updateData['course'] = $request->course;
-        if ($request->section) $updateData['section'] = $request->section;
-        if ($request->lesson) $updateData['lesson'] = $request->lesson;
-
-        if (!empty($updateData)) {
-            $question->update($updateData);
-        }
-
-        $migratedCount++;
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => "$migratedCount question(s) migrated successfully."
+        'questions' => $questions,
     ]);
 }
 
