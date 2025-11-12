@@ -1,0 +1,247 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\QuizQuestion;
+use App\Models\QuizOption;
+use App\Models\Quiz;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
+
+class QuizQuestionController extends Controller
+{
+    /**
+     * Display all questions for a given quiz.
+     */
+    public function index(Request $request, Quiz $quiz)
+    {
+
+        // Load questions with options
+        $quiz->load('questions.options');
+
+        // Group questions by group_name
+        $groupedQuestions = $quiz->questions->groupBy(function ($q) {
+            return $q->group_name ?? 'Ungrouped';
+        });
+
+        // Paginate each group
+        $paginatedGroups = [];
+        $activeGroup = $request->get('active_group');
+
+        foreach ($groupedQuestions as $groupName => $questions) {
+            $pageParam = 'page_' . Str::slug($groupName);
+            $page = $request->get($pageParam, 1);
+
+            $paginatedGroups[$groupName] = new LengthAwarePaginator(
+                $questions->forPage($page, 5), // 5 per group page (adjust as needed)
+                $questions->count(),
+                5,
+                $page,
+                [
+                    'path' => url()->current(),
+                    'query' => array_merge($request->except($pageParam), ['active_group' => $activeGroup]),
+                    'pageName' => $pageParam
+                ]
+            );
+        }
+
+        // Load all quizzes (for dropdowns, import modal, etc.)
+        $quizzes = Quiz::all();
+
+        return view('pages.admin.quiz_questions', compact('quiz', 'quizzes', 'groupedQuestions', 'paginatedGroups', 'activeGroup'));
+    }
+
+    /**
+     * Store a new question for a quiz.
+     */
+    public function store(Request $request, Quiz $quiz)
+    {
+        $request->validate([
+            'questionText' => 'required|string',
+            'questionType' => 'required|string',
+            'isMandatory' => 'required|boolean',
+            'options' => 'required|array|min:1',
+            'correct_option' => 'required',
+            'group_name' => 'nullable|string',
+        ]);
+
+        $question = $quiz->questions()->create([
+            'questionText' => $request->questionText,
+            'questionType' => $request->questionType,
+            'isMandatory' => $request->isMandatory,
+            'explanation' => $request->explanation,
+            'isQuestionShuffle' => $request->has('isQuestionShuffle'),
+            'isAnswerShuffle' => $request->has('isAnswerShuffle'),
+            'group_name' => $request->group_name,
+            'course' => $request->course,
+            'section' => $request->section,
+            'lesson' => $request->lesson,
+        ]);
+
+        foreach ($request->options as $key => $optionData) {
+            $question->options()->create([
+                'optionText' => $optionData['text'],
+                'isCorrect' => ($key == $request->correct_option),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Question created successfully!');
+    }
+
+    /**
+     * Edit a specific question.
+     */
+    public function edit($id)
+    {
+        $question = QuizQuestion::with('options')->findOrFail($id);
+        return view('admin.quizzes-questions.edit', compact('question'));
+    }
+
+    /**
+     * Update a question.
+     */
+    public function update(Request $request, $id)
+    {
+        $question = QuizQuestion::findOrFail($id);
+
+        $question->update([
+            'questionText' => $request->questionText,
+            'questionType' => $request->questionType,
+            'isMandatory' => $request->isMandatory,
+            'explanation' => $request->explanation,
+            'isQuestionShuffle' => $request->has('isQuestionShuffle'),
+            'isAnswerShuffle' => $request->has('isAnswerShuffle'),
+            'group_name' => $request->group_name ?? $question->group_name,
+            'course' => $request->course ?? $question->course,
+            'section' => $request->section ?? $question->section,
+            'lesson' => $request->lesson ?? $question->lesson,
+        ]);
+
+        // Update options if any
+        if ($request->has('options')) {
+            foreach ($request->options as $optionId => $optionData) {
+                $option = QuizOption::find($optionId);
+                if ($option) {
+                    $option->update([
+                        'optionText' => $optionData['optionText'],
+                        'isCorrect' => isset($optionData['isCorrect']),
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Question updated successfully.');
+    }
+
+    /**
+     * Delete a question.
+     */
+    public function destroy($id)
+    {
+        $question = QuizQuestion::findOrFail($id);
+        $question->delete();
+        return redirect()->back()->with('success', 'Question deleted successfully.');
+    }
+
+    /**
+     * Import questions for a specific quiz.
+     */
+    public function import(Quiz $quiz)
+    {
+        $quiz->load('questions.options');
+        $questions = $quiz->questions;
+        $quizzes = Quiz::all();
+
+        return view('pages.admin.quizzes-questions.import', compact('quiz', 'questions', 'quizzes'));
+    }
+
+public function replicate(Request $request)
+{
+    $request->validate([
+        'selectedQuestions' => 'required|string',
+        'group' => 'nullable|string',
+        'course' => 'nullable|string',
+        'section' => 'nullable|string',
+        'lesson' => 'nullable|string',
+        'quiz_id' => 'nullable|integer', // target quiz
+    ]);
+
+    $ids = explode(',', $request->selectedQuestions);
+    $replicatedCount = 0;
+
+    foreach ($ids as $id) {
+        $question = QuizQuestion::with('options')->find($id);
+        if (!$question) continue;
+
+        // Duplicate the question
+        $newQuestion = $question->replicate();
+
+        // Update fields if provided
+        if ($request->quiz_id) $newQuestion->quiz_id = $request->quiz_id;
+        if ($request->group) $newQuestion->group_name = $request->group;
+        if ($request->course) $newQuestion->course = $request->course;
+        if ($request->section) $newQuestion->section = $request->section;
+        if ($request->lesson) $newQuestion->lesson = $request->lesson;
+
+        $newQuestion->save();
+
+        // Duplicate all options
+        foreach ($question->options as $option) {
+            $newQuestion->options()->create([
+                'optionText' => $option->optionText,
+                'isCorrect' => $option->isCorrect,
+            ]);
+        }
+
+        $replicatedCount++;
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => "$replicatedCount question(s) replicated successfully."
+    ]);
+}
+
+
+public function migrate(Request $request)
+{
+    $request->validate([
+        'selectedQuestions' => 'required|string',
+        'group' => 'nullable|string',
+        'course' => 'nullable|string',
+        'section' => 'nullable|string',
+        'lesson' => 'nullable|string',
+        'quiz_id' => 'nullable|integer', // target quiz
+    ]);
+
+    $ids = explode(',', $request->selectedQuestions);
+    $migratedCount = 0;
+
+    foreach ($ids as $id) {
+        $question = QuizQuestion::find($id);
+        if (!$question) continue;
+
+        $updateData = [];
+
+        if ($request->quiz_id) $updateData['quiz_id'] = $request->quiz_id;
+        if ($request->group) $updateData['group_name'] = $request->group;
+        if ($request->course) $updateData['course'] = $request->course;
+        if ($request->section) $updateData['section'] = $request->section;
+        if ($request->lesson) $updateData['lesson'] = $request->lesson;
+
+        if (!empty($updateData)) {
+            $question->update($updateData);
+        }
+
+        $migratedCount++;
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => "$migratedCount question(s) migrated successfully."
+    ]);
+}
+
+
+}

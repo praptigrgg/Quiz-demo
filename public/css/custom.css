@@ -1,0 +1,48 @@
+:root {
+  --primary: #1C5A31;
+  --secondary: #BA1616;
+}
+
+/* Override Bootstrap theme colors if needed */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: #174b29;
+  border-color: #174b29;
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* Card & Table Styling */
+.card {
+  border-radius: 0.5rem;
+  border: 1px solid #d9dee3;
+  background-color: #fff;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Custom headings */
+h4.text-primary {
+  color: var(--primary) !important;
+}
+#quiz_group_fields .input-group {
+    max-width: 500px;
+}
+
+#quiz_group_fields .btn {
+    min-width: 40px;
+}
