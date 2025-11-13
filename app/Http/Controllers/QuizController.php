@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quiz;
+use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -12,13 +13,14 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         try {
-            $quizzes = Quiz::when($request->searchQuizzes, function ($query, $search) {
-                return $query->where('quizTitle', 'like', "%{$search}%");
-            })
+            $quizzes = Quiz::with('course') // eager load course
+                ->when($request->searchQuizzes, function ($query, $search) {
+                    return $query->where('quizTitle', 'like', "%{$search}%");
+                })
                 ->latest()
                 ->paginate(10);
 
-            return view('admin.quizzes.index', compact('quizzes'));
+            return view('pages.admin.quizzes.index', compact('quizzes'));
         } catch (\Exception $e) {
             Log::error('Quiz index error: ' . $e->getMessage());
             $quizzes = Quiz::latest()->paginate(10);
@@ -28,7 +30,8 @@ class QuizController extends Controller
 
     public function create()
     {
-        return view('pages.admin.quizzes.create');
+        $courses = Course::all(); // get all courses
+        return view('pages.admin.quizzes.create', compact('courses'));
     }
 
     public function store(Request $request)
@@ -36,6 +39,7 @@ class QuizController extends Controller
         Log::info('Quiz store method called', ['request_data' => $request->all()]);
 
         $request->validate([
+            'course_id' => 'required|exists:courses,id', 
             'quizTitle' => 'required|string|max:255',
             'quizDescription' => 'required|string',
             'quizDuration' => 'required|integer|min:1',
@@ -63,32 +67,21 @@ class QuizController extends Controller
         ]);
 
         try {
-            // Handle file upload
             $quizThumbnailPath = null;
             if ($request->hasFile('quizThumbnail')) {
                 $quizThumbnailPath = $request->file('quizThumbnail')->store('quiz-thumbnails', 'public');
-                Log::info('File uploaded', ['path' => $quizThumbnailPath]);
             }
 
-            // Handle quiz groups (convert array to JSON)
             $quizGroups = null;
             if ($request->is_quiz_group && $request->quiz_groups) {
-                // Filter out empty group names and reset array keys
-                $validGroups = array_filter($request->quiz_groups, function ($group) {
-                    return !empty(trim($group));
-                });
+                $validGroups = array_filter($request->quiz_groups, fn($group) => !empty(trim($group)));
                 if (!empty($validGroups)) {
                     $quizGroups = array_values($validGroups);
                 }
             }
 
-            Log::info('Creating quiz with data:', [
-                'quizTitle' => $request->quizTitle,
-                'pricingType' => $request->pricingType,
-                'created_by' => Auth::id()
-            ]);
-
             $quizData = [
+                'course_id' => $request->course_id, // link to course
                 'quizTitle' => $request->quizTitle,
                 'quizDescription' => $request->quizDescription,
                 'quizDuration' => $request->quizDuration,
@@ -117,18 +110,14 @@ class QuizController extends Controller
 
             $quiz = Quiz::create($quizData);
 
-            Log::info('Quiz created successfully', ['quiz_id' => $quiz->id]);
-
-            return redirect()->route('admin.quizzes.index')
-                ->with('success', 'Quiz created successfully!');
+            return redirect()->route('admin.quizzes.index')->with('success', 'Quiz created successfully!');
         } catch (\Exception $e) {
             Log::error('Quiz creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return back()->with('error', 'Failed to create quiz: ' . $e->getMessage())
-                ->withInput();
+            return back()->with('error', 'Failed to create quiz: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -136,24 +125,21 @@ class QuizController extends Controller
     {
         try {
             $quiz = Quiz::findOrFail($id);
-            $quiz->update([
-                'is_publish' => !$quiz->is_publish
-            ]);
+            $quiz->update(['is_publish' => !$quiz->is_publish]);
 
             $message = $quiz->is_publish ? 'published' : 'unpublished';
-            return redirect()->route('admin.quizzes.index')
-                ->with('success', "Quiz {$message} successfully.");
+            return redirect()->route('admin.quizzes.index')->with('success', "Quiz {$message} successfully.");
         } catch (\Exception $e) {
             Log::error('Publish status update failed: ' . $e->getMessage());
-            return redirect()->route('admin.quizzes.index')
-                ->with('error', 'Failed to update quiz publish status.');
+            return redirect()->route('admin.quizzes.index')->with('error', 'Failed to update quiz publish status.');
         }
     }
 
     public function edit($id)
     {
         $quiz = Quiz::findOrFail($id);
-        return view('pages.admin.quizzes.edit', compact('quiz'));
+        $courses = Course::all(); // get all courses
+        return view('pages.admin.quizzes.edit', compact('quiz', 'courses'));
     }
 
     public function update(Request $request, $id)
@@ -161,6 +147,7 @@ class QuizController extends Controller
         $quiz = Quiz::findOrFail($id);
 
         $request->validate([
+            'course_id' => 'required|exists:courses,id',
             'quizTitle' => 'required|string|max:255',
             'quizDescription' => 'required|string',
             'quizDuration' => 'required|integer|min:1',
@@ -172,12 +159,10 @@ class QuizController extends Controller
 
         try {
             $quiz->update($request->all());
-            return redirect()->route('admin.quizzes.index')
-                ->with('success', 'Quiz updated successfully!');
+            return redirect()->route('admin.quizzes.index')->with('success', 'Quiz updated successfully!');
         } catch (\Exception $e) {
             Log::error('Quiz update failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update quiz.')
-                ->withInput();
+            return back()->with('error', 'Failed to update quiz.')->withInput();
         }
     }
 
@@ -187,12 +172,10 @@ class QuizController extends Controller
             $quiz = Quiz::findOrFail($id);
             $quiz->delete();
 
-            return redirect()->route('admin.quizzes.index')
-                ->with('success', 'Quiz deleted successfully!');
+            return redirect()->route('admin.quizzes.index')->with('success', 'Quiz deleted successfully!');
         } catch (\Exception $e) {
             Log::error('Quiz deletion failed: ' . $e->getMessage());
-            return redirect()->route('admin.quizzes.index')
-                ->with('error', 'Failed to delete quiz.');
+            return redirect()->route('admin.quizzes.index')->with('error', 'Failed to delete quiz.');
         }
     }
 }

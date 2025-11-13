@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Quiz extends Model
 {
     protected $fillable = [
+        'course_id',
         'quizTitle',
         'quizSlug',
         'quizDescription',
@@ -58,5 +59,11 @@ public function getGroupsAttribute()
 {
     return $this->quiz_groups ?? [];
 }
+public function courses()
+{
+    return $this->belongsToMany(Course::class, 'course_section_quiz', 'quiz_id', 'course_id');
+}
+
+
 
 }

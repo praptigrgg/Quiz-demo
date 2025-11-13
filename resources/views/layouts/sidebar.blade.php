@@ -186,8 +186,8 @@
             <div data-i18n="Course Management">Course Management</div>
         </a>
         <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Courses List</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><div>Add Course</div></a></li>
+            <li class="menu-item"><a href="{{route('admin.courses.index')}}" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Courses List</div></a></li>
+            <li class="menu-item"><a href="{{route('admin.courses.create')}}" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><div>Add Course</div></a></li>
         </ul>
     </li>
 

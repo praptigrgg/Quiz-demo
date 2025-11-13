@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\QuizQuestion;
-use App\Models\QuizOption;
+use App\Models\Course;
 use App\Models\Quiz;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
+use App\Models\Lesson;
+use App\Models\QuizOption;
+use App\Models\CourseGroup;
 use Illuminate\Support\Str;
+use App\Models\QuizQuestion;
+use Illuminate\Http\Request;
+use App\Models\CourseSection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class QuizQuestionController extends Controller
 {
@@ -153,8 +157,9 @@ class QuizQuestionController extends Controller
         $quiz->load('questions.options');
         $questions = $quiz->questions;
         $quizzes = Quiz::all();
+        $courses = Course::all();
 
-        return view('pages.admin.quizzes-questions.import', compact('quiz', 'questions', 'quizzes'));
+        return view('pages.admin.quizzes-questions.import', compact('quiz', 'questions', 'quizzes', 'courses'));
     }
 
 public function replicate(Request $request)
@@ -283,7 +288,7 @@ public function filter(Request $request)
         'explanation',
         'questionType',
         'group_name',
-       
+
     ]);
 
     return response()->json([
@@ -292,5 +297,24 @@ public function filter(Request $request)
     ]);
 }
 
+  public function getSections($courseId)
+    {
+        $sections = CourseSection::where('course_id', $courseId)->pluck('name', 'id');
+        return response()->json($sections);
+    }
 
+    public function getLessons($courseId, $sectionId)
+    {
+        $lessons = Lesson::where('course_id', $courseId)->where('section_id', $sectionId)->pluck('name', 'id');
+        return response()->json($lessons);
+    }
+
+    public function getGroups($courseId, $sectionId, $lessonId)
+    {
+        $groups = CourseGroup::where('course_id', $courseId)
+                       ->where('section_id', $sectionId)
+                       ->where('lesson_id', $lessonId)
+                       ->pluck('name', 'id');
+        return response()->json($groups);
+    }
 }

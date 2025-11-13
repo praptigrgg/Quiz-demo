@@ -3,7 +3,6 @@
 @section('content')
     <div class="container-fluid">
         <div class="row">
-
             <!-- Question Management Card -->
             <div class="col-lg-12">
                 <div class="card">
@@ -13,38 +12,36 @@
                     <div class="card-body">
 
                         <!-- FILTERS & ACTIONS -->
-                        <form id="filterForm" class="mb-4" onsubmit="event.preventDefault(); filterQuestions();">
+                        <form id="filterForm" class="mb-4">
+                            @csrf
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-3">
                                     <label class="form-label">Course</label>
                                     <select name="course" class="form-select" id="courseSelect"
-                                        onchange="updateSections()">
+                                        onchange="updateSections('filter')">
                                         <option value="">Select Course</option>
-                                        @foreach (config('hierarchy.courses') as $courseKey => $course)
-                                            <option value="{{ $courseKey }}">{{ $course['name'] }}</option>
-                                        @endforeach
                                     </select>
                                 </div>
 
                                 <div class="col-md-3">
                                     <label class="form-label">Section</label>
-                                    <select name="section" class="form-select" id="sectionSelect" onchange="updateLessons()"
-                                        disabled>
+                                    <select name="section" class="form-select" id="sectionSelect"
+                                        onchange="updateLessons('filter')" disabled>
                                         <option value="">Select Section</option>
                                     </select>
                                 </div>
 
                                 <div class="col-md-3">
                                     <label class="form-label">Lesson</label>
-                                    <select name="lesson" class="form-select" id="lessonSelect" onchange="updateGroups()"
-                                        disabled>
+                                    <select name="lesson" class="form-select" id="lessonSelect"
+                                        onchange="updateGroups('filter')" disabled>
                                         <option value="">Select Lesson</option>
                                     </select>
                                 </div>
 
                                 <div class="col-md-3">
                                     <label class="form-label">Group</label>
-                                    <select name="group" class="form-select" id="groupSelect" disabled>
+                                    <select name="group_name" class="form-select" id="groupSelect" disabled>
                                         <option value="">Select Group</option>
                                     </select>
                                 </div>
@@ -53,7 +50,7 @@
                             <div class="row mt-3 g-3 align-items-end">
                                 <div class="col-md-3">
                                     <label class="form-label">Quiz</label>
-                                    <select name="quiz" class="form-select" id="quizFilterSelect">
+                                    <select name="quiz_id" class="form-select" id="quizFilterSelect">
                                         <option value="">Select Quiz</option>
                                         @foreach ($quizzes as $quiz)
                                             <option value="{{ $quiz->id }}">{{ $quiz->quizTitle }}</option>
@@ -62,24 +59,26 @@
                                 </div>
 
                                 <div class="col-md-3">
-                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <button type="button" class="btn btn-primary" onclick="filterQuestions()">
+                                        <i class="bx bx-search"></i> Search
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                                        <i class="bx bx-reset"></i> Reset
+                                    </button>
                                 </div>
                             </div>
                         </form>
 
-                        <!-- Quiz Name -->
-                        @if (isset($quiz))
-                            <div class="mb-2">
-                                <small class="fw-semibold text-white px-2 py-1 rounded" style="background-color: #198754;">
-                                    Quiz Name: {{ $quiz->quizTitle }}
-                                </small>
-                            </div>
-                        @endif
+                        <!-- Quiz Name Display -->
+                        <div id="quizNameDisplay" class="mb-2" style="display:none;">
+                            <small class="fw-semibold text-white px-2 py-1 rounded" style="background-color: #198754;">
+                                Quiz Name: <span id="quizTitleSpan"></span>
+                            </small>
+                        </div>
 
-                        <!-- Action Buttons (Replicate / Migrate) -->
+                        <!-- Action Buttons -->
                         <div class="mt-2 mb-3" id="actionButtons" style="display:none;">
-                            <button type="button" class="btn btn-success me-2"
-                                onclick="showActionModal('replicate')">
+                            <button type="button" class="btn btn-success me-2" onclick="showActionModal('replicate')">
                                 <i class="bx bx-copy"></i> Replicate
                             </button>
                             <button type="button" class="btn btn-primary" onclick="showActionModal('migrate')">
@@ -87,9 +86,12 @@
                             </button>
                         </div>
 
-                        <!-- Inline Action Form -->
+                        <!-- Action Form -->
                         <div id="inlineActionForm" class="card mt-3" style="display: none;">
-                            <div class="card-header" id="inlineActionTitle"></div>
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span id="inlineActionTitle"></span>
+                                <button type="button" class="btn-close" onclick="hideActionForm()"></button>
+                            </div>
                             <div class="card-body">
                                 <form id="actionForm">
                                     @csrf
@@ -101,27 +103,25 @@
                                         <div class="row g-2 align-items-end">
                                             <div class="col-md-3">
                                                 <select name="course" class="form-select" id="actionCourseSelect"
-                                                    onchange="updateActionSections()">
+                                                    onchange="updateSections('action')">
                                                     <option value="">Select Course</option>
-                                                    @foreach (config('hierarchy.courses') as $courseKey => $course)
-                                                        <option value="{{ $courseKey }}">{{ $course['name'] }}</option>
-                                                    @endforeach
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="section" class="form-select" id="actionSectionSelect"
-                                                    onchange="updateActionLessons()" disabled>
+                                                    onchange="updateLessons('action')" disabled>
                                                     <option value="">Select Section</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="lesson" class="form-select" id="actionLessonSelect"
-                                                    onchange="updateActionGroups()" disabled>
+                                                    onchange="updateGroups('action')" disabled>
                                                     <option value="">Select Lesson</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
-                                                <select name="group" class="form-select" id="actionGroupSelect" disabled>
+                                                <select name="group_name" class="form-select" id="actionGroupSelect"
+                                                    disabled>
                                                     <option value="">Select Group</option>
                                                 </select>
                                             </div>
@@ -140,15 +140,17 @@
 
                                     <div class="alert alert-info" id="actionSummary"></div>
 
-                                    <button type="button" class="btn btn-secondary me-2"
-                                        id="cancelActionBtn">Cancel</button>
-                                    <button type="button" class="btn btn-primary"
-                                        onclick="submitAction()">Confirm</button>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-secondary me-2"
+                                            onclick="hideActionForm()">Cancel</button>
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="submitAction()">Confirm</button>
+                                    </div>
                                 </form>
                             </div>
                         </div>
 
-                        <!-- QUESTIONS TABLE (Hidden initially) -->
+                        <!-- Questions Table -->
                         <div class="table-responsive mt-3" id="questionsContainer" style="display:none;">
                             <table class="table table-striped table-bordered">
                                 <thead class="table-primary">
@@ -159,6 +161,7 @@
                                         <th>Explanation</th>
                                         <th>Type</th>
                                         <th>Group</th>
+                                        <th>Course</th>
                                     </tr>
                                 </thead>
                                 <tbody id="questionsTable"></tbody>
@@ -168,190 +171,119 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        const hierarchy = @json(config('hierarchy.courses'));
         let selectedQuestions = [];
 
-        // ----- Cascading Dropdowns (Filter) -----
-        function updateSections() {
-            const course = document.getElementById('courseSelect').value;
-            const sectionSelect = document.getElementById('sectionSelect');
-            const lessonSelect = document.getElementById('lessonSelect');
-            const groupSelect = document.getElementById('groupSelect');
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCourses('filter');
+            loadCourses('action');
 
-            sectionSelect.innerHTML = '<option value="">Select Section</option>';
-            lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-
-            if (course && hierarchy[course]) {
-                sectionSelect.disabled = false;
-                Object.entries(hierarchy[course]['sections']).forEach(([key, val]) => {
-                    sectionSelect.innerHTML += `<option value="${key}">${val}</option>`;
-                });
-            } else {
-                sectionSelect.disabled = true;
-                lessonSelect.disabled = true;
-                groupSelect.disabled = true;
-            }
-        }
-
-        function updateLessons() {
-            const course = document.getElementById('courseSelect').value;
-            const section = document.getElementById('sectionSelect').value;
-            const lessonSelect = document.getElementById('lessonSelect');
-            const groupSelect = document.getElementById('groupSelect');
-
-            lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-
-            if (course && section && hierarchy[course]?.lessons?.[section]) {
-                lessonSelect.disabled = false;
-                Object.entries(hierarchy[course]['lessons'][section]).forEach(([key, val]) => {
-                    lessonSelect.innerHTML += `<option value="${key}">${val}</option>`;
-                });
-            } else {
-                lessonSelect.disabled = true;
-                groupSelect.disabled = true;
-            }
-        }
-
-        function updateGroups() {
-            const groupSelect = document.getElementById('groupSelect');
-            groupSelect.disabled = false;
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-            ['Group A', 'Group B', 'Group C'].forEach(g => {
-                groupSelect.innerHTML += `<option value="${g}">${g}</option>`;
+            document.getElementById('selectAll').addEventListener('change', function() {
+                const checked = this.checked;
+                document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = checked);
+                updateSelectedQuestions();
             });
-        }
 
-        // ----- Cascading Dropdowns (Action Form) -----
-        function updateActionSections() {
-            const course = document.getElementById('actionCourseSelect').value;
-            const sectionSelect = document.getElementById('actionSectionSelect');
-            const lessonSelect = document.getElementById('actionLessonSelect');
-            const groupSelect = document.getElementById('actionGroupSelect');
+            setupMutualExclusion();
+        });
 
-            sectionSelect.innerHTML = '<option value="">Select Section</option>';
-            lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-
-            if (course && hierarchy[course]) {
-                sectionSelect.disabled = false;
-                Object.entries(hierarchy[course]['sections']).forEach(([key, val]) => {
-                    sectionSelect.innerHTML += `<option value="${key}">${val}</option>`;
-                });
-            } else {
-                sectionSelect.disabled = true;
-                lessonSelect.disabled = true;
-                groupSelect.disabled = true;
-            }
-        }
-
-        function updateActionLessons() {
-            const course = document.getElementById('actionCourseSelect').value;
-            const section = document.getElementById('actionSectionSelect').value;
-            const lessonSelect = document.getElementById('actionLessonSelect');
-            const groupSelect = document.getElementById('actionGroupSelect');
-
-            lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-
-            if (course && section && hierarchy[course]?.lessons?.[section]) {
-                lessonSelect.disabled = false;
-                Object.entries(hierarchy[course]['lessons'][section]).forEach(([key, val]) => {
-                    lessonSelect.innerHTML += `<option value="${key}">${val}</option>`;
-                });
-            } else {
-                lessonSelect.disabled = true;
-                groupSelect.disabled = true;
-            }
-        }
-
-        function updateActionGroups() {
-            const groupSelect = document.getElementById('actionGroupSelect');
-            groupSelect.disabled = false;
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-            ['Group A', 'Group B', 'Group C'].forEach(g => {
-                groupSelect.innerHTML += `<option value="${g}">${g}</option>`;
-            });
-        }
-
-        // ----- Question Selection -----
         function updateSelectedQuestions() {
             selectedQuestions = Array.from(document.querySelectorAll('.question-checkbox:checked')).map(cb => cb.value);
             document.getElementById('selectedQuestions').value = selectedQuestions.join(',');
+            document.getElementById('actionButtons').style.display = selectedQuestions.length > 0 ? 'block' : 'none';
         }
 
-        // ----- Filter Questions -----
-        function filterQuestions() {
-            const course = document.getElementById('courseSelect').value;
-            const section = document.getElementById('sectionSelect').value;
-            const lesson = document.getElementById('lessonSelect').value;
-            const group = document.getElementById('groupSelect').value;
-            const quiz_id = document.getElementById('quizFilterSelect').value;
+        async function filterQuestions() {
+            const formData = new FormData(document.getElementById('filterForm'));
+            const filters = Object.fromEntries(formData);
+            const tbody = document.getElementById('questionsTable');
+            tbody.innerHTML =
+                '<tr><td colspan="7" class="text-center"><div class="spinner-border"></div> Loading questions...</td></tr>';
+            document.getElementById('questionsContainer').style.display = 'block';
+            document.getElementById('actionButtons').style.display = 'none';
 
-            fetch('{{ route('admin.quizzes-questions.filter') }}', {
+            try {
+                const response = await fetch('{{ route('admin.quizzes-questions.filter') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        course,
-                        section,
-                        lesson,
-                        group,
-                        quiz_id
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    const tbody = document.getElementById('questionsTable');
-                    tbody.innerHTML = '';
-                    selectedQuestions = [];
-                    document.getElementById('selectedQuestions').value = '';
-
-                    if (data.questions.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No questions found.</td></tr>';
-                        document.getElementById('actionButtons').style.display = 'none';
-                    } else {
-                        data.questions.forEach((q, index) => {
-                            tbody.innerHTML += `
-                                <tr>
-                                    <td><input type="checkbox" class="question-checkbox" value="${q.id}" onchange="updateSelectedQuestions()"></td>
-                                    <td>${index + 1}</td>
-                                    <td>${q.questionText}</td>
-                                    <td>${q.explanation || '<em>No explanation</em>'}</td>
-                                    <td>${q.questionType}</td>
-                                    <td>${q.group_name || '-'}</td>
-                                </tr>
-                            `;
-                        });
-                        document.getElementById('actionButtons').style.display = 'block';
-                    }
-
-                    document.getElementById('questionsContainer').style.display = 'block';
-
-                    // Re-bind selectAll
-                    document.getElementById('selectAll').addEventListener('change', function() {
-                        const checked = this.checked;
-                        document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = checked);
-                        updateSelectedQuestions();
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Something went wrong while filtering.');
+                    body: JSON.stringify(filters)
                 });
+
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message || 'Filter failed');
+                displayQuestions(data.questions);
+                updateQuizDisplay(filters.quiz_id);
+            } catch (error) {
+                console.error('Filter error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading questions: ' +
+                    error.message + '</td></tr>';
+                document.getElementById('actionButtons').style.display = 'none';
+            }
         }
 
-        // ----- Show Action Modal -----
+        function displayQuestions(questions) {
+            const tbody = document.getElementById('questionsTable');
+            tbody.innerHTML = '';
+            if (questions.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="7" class="text-center">No questions found matching your criteria.</td></tr>';
+                document.getElementById('actionButtons').style.display = 'none';
+            } else {
+                questions.forEach((q, index) => {
+                    tbody.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" class="question-checkbox" value="${q.id}" onchange="updateSelectedQuestions()"></td>
+                        <td>${index + 1}</td>
+                        <td>${q.questionText}</td>
+                        <td>${q.explanation || '<em class="text-muted">No explanation</em>'}</td>
+                        <td><span class="badge bg-secondary">${q.questionType}</span></td>
+                        <td>${q.group_name || '-'}</td>
+                        <td>${q.course || '-'}</td>
+                    </tr>
+                `;
+                });
+            }
+            selectedQuestions = [];
+            document.getElementById('selectedQuestions').value = '';
+            document.getElementById('selectAll').checked = false;
+        }
+
+        function updateQuizDisplay(quizId) {
+            const quizDisplay = document.getElementById('quizNameDisplay');
+            const quizTitleSpan = document.getElementById('quizTitleSpan');
+            if (quizId) {
+                const quizSelect = document.getElementById('quizFilterSelect');
+                const selectedOption = quizSelect.options[quizSelect.selectedIndex];
+                quizTitleSpan.textContent = selectedOption.text;
+                quizDisplay.style.display = 'block';
+            } else {
+                quizDisplay.style.display = 'none';
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('filterForm').reset();
+            document.getElementById('sectionSelect').disabled = true;
+            document.getElementById('lessonSelect').disabled = true;
+            document.getElementById('groupSelect').disabled = true;
+            document.getElementById('questionsContainer').style.display = 'none';
+            document.getElementById('actionButtons').style.display = 'none';
+            document.getElementById('quizNameDisplay').style.display = 'none';
+            loadCourses('filter');
+        }
+
         function showActionModal(type) {
-            if (selectedQuestions.length === 0) return alert('Select at least one question');
+            if (selectedQuestions.length === 0) {
+                alert('Please select at least one question');
+                return;
+            }
             document.getElementById('actionType').value = type;
             document.getElementById('inlineActionTitle').textContent = type === 'replicate' ? 'Replicate Questions' :
                 'Migrate Questions';
@@ -360,72 +292,180 @@
             document.getElementById('inlineActionForm').style.display = 'block';
         }
 
-        // Cancel
-        document.getElementById('cancelActionBtn').addEventListener('click', () => {
+        function hideActionForm() {
             document.getElementById('inlineActionForm').style.display = 'none';
-        });
+            document.getElementById('actionForm').reset();
+            loadCourses('action');
+        }
 
-        // Submit Action
-        function submitAction() {
+        async function submitAction() {
             const formData = new FormData(document.getElementById('actionForm'));
+            const actionType = formData.get('actionType');
 
-            const hasCascading = formData.get('course') && formData.get('section') && formData.get('lesson') && formData.get('group');
+            const hasCascading = formData.get('course') && formData.get('section') && formData.get('lesson') && formData
+                .get('group_name');
             const hasQuiz = formData.get('quiz_id');
 
-            if (!hasCascading && !hasQuiz) return alert('Select either cascading destination or quiz');
+            if (!hasCascading && !hasQuiz) {
+                alert('Please select either cascading destination or quiz');
+                return;
+            }
 
-            const url = formData.get('actionType') === 'replicate' ?
+            const url = actionType === 'replicate' ?
                 '{{ route('admin.quizzes-questions.replicate') }}' :
                 '{{ route('admin.quizzes-questions.migrate') }}';
 
-            fetch(url, {
+            try {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        document.getElementById('inlineActionForm').style.display = 'none';
-                        filterQuestions(); // Refresh filtered table
-                    } else alert('Error: ' + (data.message || 'Something went wrong'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Something went wrong');
                 });
-        }
-
-        // Mutually Exclusive Destinations
-        const actionCourse = document.getElementById('actionCourseSelect');
-        const actionSection = document.getElementById('actionSectionSelect');
-        const actionLesson = document.getElementById('actionLessonSelect');
-        const actionGroup = document.getElementById('actionGroupSelect');
-        const actionQuiz = document.getElementById('actionQuizSelect');
-
-        function disableQuizIfCascadingSelected() {
-            if (actionCourse.value || actionSection.value || actionLesson.value || actionGroup.value) {
-                actionQuiz.value = '';
-                actionQuiz.disabled = true;
-            } else actionQuiz.disabled = false;
-        }
-
-        function disableCascadingIfQuizSelected() {
-            if (actionQuiz.value) {
-                actionCourse.value = '';
-                actionSection.value = '';
-                actionLesson.value = '';
-                actionGroup.value = '';
-                actionSection.disabled = true;
-                actionLesson.disabled = true;
-                actionGroup.disabled = true;
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    hideActionForm();
+                    filterQuestions();
+                } else {
+                    alert('Error: ' + (data.message || 'Something went wrong'));
+                }
+            } catch (error) {
+                console.error('Action error:', error);
+                alert('Something went wrong: ' + error.message);
             }
         }
-        [actionCourse, actionSection, actionLesson, actionGroup].forEach(el => el.addEventListener('change', disableQuizIfCascadingSelected));
-        actionQuiz.addEventListener('change', disableCascadingIfQuizSelected);
+
+        function setupMutualExclusion() {
+            const actionCourse = document.getElementById('actionCourseSelect');
+            const actionSection = document.getElementById('actionSectionSelect');
+            const actionLesson = document.getElementById('actionLessonSelect');
+            const actionGroup = document.getElementById('actionGroupSelect');
+            const actionQuiz = document.getElementById('actionQuizSelect');
+
+            [actionCourse, actionSection, actionLesson, actionGroup].forEach(el => {
+                el?.addEventListener('change', () => {
+                    if (actionCourse.value || actionSection.value || actionLesson.value || actionGroup
+                        .value) {
+                        actionQuiz.value = '';
+                        actionQuiz.disabled = true;
+                    } else {
+                        actionQuiz.disabled = false;
+                    }
+                });
+            });
+
+            actionQuiz?.addEventListener('change', () => {
+                if (actionQuiz.value) {
+                    actionCourse.value = '';
+                    actionSection.value = '';
+                    actionLesson.value = '';
+                    actionGroup.value = '';
+                    actionSection.disabled = true;
+                    actionLesson.disabled = true;
+                    actionGroup.disabled = true;
+                    actionCourse.dispatchEvent(new Event('change'));
+                } else {
+                    actionSection.disabled = !actionCourse.value;
+                    actionLesson.disabled = !actionSection.value;
+                    actionGroup.disabled = !actionLesson.value;
+                }
+            });
+        }
+
+        // ===== Cascading Dropdown Functions =====
+        async function loadCourses(type = 'filter') {
+            const selectId = type === 'filter' ? 'courseSelect' : 'actionCourseSelect';
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select Course</option>';
+            try {
+                const response = await fetch(`{{ route('admin.cascade.courses') }}`);
+                const courses = await response.json();
+                courses.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.text = course.courseName;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Error loading courses:', err);
+            }
+        }
+
+        async function updateSections(type = 'filter') {
+            const courseSelect = document.getElementById(type === 'filter' ? 'courseSelect' : 'actionCourseSelect');
+            const sectionSelect = document.getElementById(type === 'filter' ? 'sectionSelect' : 'actionSectionSelect');
+
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            if (!courseSelect.value) {
+                sectionSelect.disabled = true;
+                return;
+            }
+
+            try {
+                const response = await fetch(`{{ url('/admin/cascade/sections') }}/${courseSelect.value}`);
+                const sections = await response.json();
+                sections.forEach(sec => {
+                    const option = document.createElement('option');
+                    option.value = sec.id;
+                    option.text = sec.sectionName;
+                    sectionSelect.appendChild(option);
+                });
+                sectionSelect.disabled = false;
+            } catch (err) {
+                console.error('Error loading sections:', err);
+            }
+        }
+
+        async function updateLessons(type = 'filter') {
+            const sectionSelect = document.getElementById(type === 'filter' ? 'sectionSelect' : 'actionSectionSelect');
+            const lessonSelect = document.getElementById(type === 'filter' ? 'lessonSelect' : 'actionLessonSelect');
+
+            lessonSelect.innerHTML = '<option value="">Select Lesson</option>';
+            if (!sectionSelect.value) {
+                lessonSelect.disabled = true;
+                return;
+            }
+
+            try {
+                const response = await fetch(`{{ url('/admin/cascade/lessons') }}/${sectionSelect.value}`);
+                const lessons = await response.json();
+                lessons.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    option.text = lesson.lessonName;
+                    lessonSelect.appendChild(option);
+                });
+                lessonSelect.disabled = false;
+            } catch (err) {
+                console.error('Error loading lessons:', err);
+            }
+        }
+
+        async function updateGroups(type = 'filter') {
+            const lessonSelect = document.getElementById(type === 'filter' ? 'lessonSelect' : 'actionLessonSelect');
+            const groupSelect = document.getElementById(type === 'filter' ? 'groupSelect' : 'actionGroupSelect');
+
+            groupSelect.innerHTML = '<option value="">Select Group</option>';
+            if (!lessonSelect.value) {
+                groupSelect.disabled = true;
+                return;
+            }
+
+            try {
+                const response = await fetch(`{{ url('/admin/cascade/groups') }}/${lessonSelect.value}`);
+                const groups = await response.json();
+                groups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.name;
+                    option.text = group.name;
+                    groupSelect.appendChild(option);
+                });
+                groupSelect.disabled = false;
+            } catch (err) {
+                console.error('Error loading groups:', err);
+            }
+        }
     </script>
 @endsection

@@ -19,6 +19,9 @@ return new class extends Migration
             $table->text('quizSlug')->nullable();
             $table->longText('quizDescription')->nullable();
 
+            $table->unsignedBigInteger('course_id')->nullable();
+            $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
+
             // Pricing and enrollment
             $table->string('pricingType')->default('free'); // free, paid
             $table->integer('valid_days_after_enrollment')->nullable();
@@ -56,7 +59,6 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
-
         });
     }
 
