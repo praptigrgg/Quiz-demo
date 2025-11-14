@@ -39,7 +39,7 @@ class QuizController extends Controller
         Log::info('Quiz store method called', ['request_data' => $request->all()]);
 
         $request->validate([
-            'course_id' => 'required|exists:courses,id', 
+            'course_id' => 'required|exists:courses,id',
             'quizTitle' => 'required|string|max:255',
             'quizDescription' => 'required|string',
             'quizDuration' => 'required|integer|min:1',
@@ -178,4 +178,16 @@ class QuizController extends Controller
             return redirect()->route('admin.quizzes.index')->with('error', 'Failed to delete quiz.');
         }
     }
+
+  public function getGroups($id)
+{
+    $quiz = Quiz::findOrFail($id);
+    $groups = $quiz->quiz_groups ?? []; 
+
+    return response()->json([
+        'groups' => $groups
+    ]);
+}
+
+
 }

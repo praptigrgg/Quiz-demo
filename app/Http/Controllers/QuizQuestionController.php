@@ -163,141 +163,176 @@ class QuizQuestionController extends Controller
     }
 
 public function replicate(Request $request)
-    {
-        $request->validate([
-            'selectedQuestions' => 'required|string',
-            'actionType' => 'required|string',
-        ]);
-
-        $selectedIds = explode(',', $request->selectedQuestions);
-
-        if (empty($selectedIds)) {
-            return response()->json(['success' => false, 'message' => 'No questions selected']);
-        }
-
-        $destinationQuizId = $request->quiz_id;
-        $destinationCourse = $request->course;
-        $destinationSection = $request->section;
-        $destinationLesson = $request->lesson;
-        $destinationGroup = $request->group;
-
-        if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson || !$destinationGroup)) {
-            return response()->json(['success' => false, 'message' => 'Select either cascading destination or quiz']);
-        }
-
-        $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
-
-        DB::beginTransaction();
-        try {
-            foreach ($questions as $question) {
-                $newQuestion = $question->replicate();
-                if ($destinationQuizId) {
-                    $newQuestion->quiz_id = $destinationQuizId;
-                } else {
-                    $newQuestion->course = $destinationCourse;
-                    $newQuestion->section = $destinationSection;
-                    $newQuestion->lesson = $destinationLesson;
-                    $newQuestion->group = $destinationGroup;
-                }
-                $newQuestion->save();
-            }
-            DB::commit();
-            return response()->json(['success' => true, 'message' => count($questions).' question(s) replicated successfully']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()]);
-        }
-    }
-
-    // ----- Migrate Questions -----
-    public function migrate(Request $request)
-    {
-        $request->validate([
-            'selectedQuestions' => 'required|string',
-            'actionType' => 'required|string',
-        ]);
-
-        $selectedIds = explode(',', $request->selectedQuestions);
-
-        if (empty($selectedIds)) {
-            return response()->json(['success' => false, 'message' => 'No questions selected']);
-        }
-
-        $destinationQuizId = $request->quiz_id;
-        $destinationCourse = $request->course;
-        $destinationSection = $request->section;
-        $destinationLesson = $request->lesson;
-        $destinationGroup = $request->group;
-
-        if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson || !$destinationGroup)) {
-            return response()->json(['success' => false, 'message' => 'Select either cascading destination or quiz']);
-        }
-
-        $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
-
-        DB::beginTransaction();
-        try {
-            foreach ($questions as $question) {
-                if ($destinationQuizId) {
-                    $question->quiz_id = $destinationQuizId;
-                } else {
-                    $question->course = $destinationCourse;
-                    $question->section = $destinationSection;
-                    $question->lesson = $destinationLesson;
-                    $question->group = $destinationGroup;
-                }
-                $question->save();
-            }
-            DB::commit();
-            return response()->json(['success' => true, 'message' => count($questions).' question(s) migrated successfully']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()]);
-        }
-    }
-public function filter(Request $request)
 {
-    $query = QuizQuestion::query();
-
-    // Apply cascading filters
-    if ($request->filled('course')) {
-        $query->where('course', $request->course);
-    }
-
-    if ($request->filled('section')) {
-        $query->where('section', $request->section);
-    }
-
-    if ($request->filled('lesson')) {
-        $query->where('lesson', $request->lesson);
-    }
-
-    if ($request->filled('group')) {
-        // ✅ FIX: your database likely uses 'group_name', not 'group'
-        $query->where('group_name', $request->group);
-    }
-
-    if ($request->filled('quiz_id')) {
-        $query->where('quiz_id', $request->quiz_id);
-    }
-
-    // ✅ FIX: select correct fields
-    $questions = $query->get([
-        'id',
-        'questionText',
-        'explanation',
-        'questionType',
-        'group_name',
-
+    $request->validate([
+        'selectedQuestions' => 'required|string',
+        'actionType' => 'required|string',
     ]);
 
-    return response()->json([
-        'success' => true,
-        'questions' => $questions,
-    ]);
+    $selectedIds = explode(',', $request->selectedQuestions);
+    $destinationQuizId = $request->quiz_id;
+    $destinationCourse = $request->course;
+    $destinationSection = $request->section;
+    $destinationLesson = $request->lesson;
+    $destinationGroup = $request->group;   // <-- FIXED
+
+    // Validate destination
+    if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Select either cascading destination or quiz'
+        ]);
+    }
+
+    $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
+
+    DB::beginTransaction();
+    try {
+        foreach ($questions as $question) {
+            $newQuestion = $question->replicate();
+
+            // --- Destination: QUIZ ---
+            if ($destinationQuizId) {
+                $newQuestion->quiz_id = $destinationQuizId;
+                if ($destinationGroup) {
+                    $newQuestion->group_name = $destinationGroup;   // <-- FIXED
+                }
+            }
+
+            // --- Destination: Cascading ---
+            else {
+                $newQuestion->course = $destinationCourse;
+                $newQuestion->section = $destinationSection;
+                $newQuestion->lesson = $destinationLesson;
+                $newQuestion->group_name = $destinationGroup;       // <-- FIXED
+            }
+
+            $newQuestion->save();
+
+            // Replicate options
+            foreach ($question->options as $opt) {
+                $newQuestion->options()->create([
+                    'optionText' => $opt->optionText,
+                    'isCorrect' => $opt->isCorrect,
+                ]);
+            }
+        }
+
+        DB::commit();
+        return response()->json([
+            'success' => true,
+            'message' => count($questions) . ' question(s) replicated successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
 }
 
-  public function getSections($courseId)
+    // ----- Migrate Questions -----
+public function migrate(Request $request)
+{
+    $request->validate([
+        'selectedQuestions' => 'required|string',
+        'actionType' => 'required|string',
+    ]);
+
+    $selectedIds = explode(',', $request->selectedQuestions);
+    $destinationQuizId = $request->quiz_id;
+    $destinationCourse = $request->course;
+    $destinationSection = $request->section;
+    $destinationLesson = $request->lesson;
+    $destinationGroup = $request->group;   // <-- FIXED
+
+    if (!$destinationQuizId && (!$destinationCourse || !$destinationSection || !$destinationLesson)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Select either cascading destination or quiz'
+        ]);
+    }
+
+    $questions = QuizQuestion::whereIn('id', $selectedIds)->get();
+
+    DB::beginTransaction();
+    try {
+        foreach ($questions as $question) {
+
+            // --- Destination: QUIZ ---
+            if ($destinationQuizId) {
+                $question->quiz_id = $destinationQuizId;
+                if ($destinationGroup) {
+                    $question->group_name = $destinationGroup;   // <-- FIXED
+                }
+            }
+
+            // --- Destination: Cascading ---
+            else {
+                $question->course = $destinationCourse;
+                $question->section = $destinationSection;
+                $question->lesson = $destinationLesson;
+                $question->group_name = $destinationGroup;        // <-- FIXED
+            }
+
+            $question->save();
+        }
+
+        DB::commit();
+        return response()->json([
+            'success' => true,
+            'message' => count($questions) . ' question(s) migrated successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+}
+
+    public function filter(Request $request)
+    {
+        $query = QuizQuestion::query()
+            ->with('quiz'); // eager load quiz for course info
+
+        // Filter by course via the quizzes table
+        if ($request->filled('course')) {
+            $query->whereHas('quiz', function ($q) use ($request) {
+                $q->where('course_id', $request->course);
+            });
+        }
+
+        // Filter by quiz_id directly
+        if ($request->filled('quiz_id')) {
+            $query->where('quiz_id', $request->quiz_id);
+        }
+
+        // Filter by group
+        if ($request->filled('group')) {
+            $query->where('group_name', $request->group);
+        }
+
+        $questions = $query->get([
+            'id',
+            'questionText',
+            'explanation',
+            'questionType',
+            'group_name',
+            'quiz_id',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'questions' => $questions,
+        ]);
+    }
+
+    public function getSections($courseId)
     {
         $sections = CourseSection::where('course_id', $courseId)->pluck('name', 'id');
         return response()->json($sections);
@@ -307,14 +342,5 @@ public function filter(Request $request)
     {
         $lessons = Lesson::where('course_id', $courseId)->where('section_id', $sectionId)->pluck('name', 'id');
         return response()->json($lessons);
-    }
-
-    public function getGroups($courseId, $sectionId, $lessonId)
-    {
-        $groups = CourseGroup::where('course_id', $courseId)
-                       ->where('section_id', $sectionId)
-                       ->where('lesson_id', $lessonId)
-                       ->pluck('name', 'id');
-        return response()->json($groups);
     }
 }

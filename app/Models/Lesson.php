@@ -22,9 +22,6 @@ class Lesson extends Model
     {
         return $this->belongsTo(CourseSection::class, 'course_section_id');
     }
-    public function courseGroups()
-{
-    return $this->hasMany(CourseGroup::class);
-}
+
 
 }
