@@ -7,6 +7,8 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuizQuestionController;
 use App\Http\Controllers\QuizQuestionExcelController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ZoomController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', function () {
@@ -65,4 +67,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Excel upload
     Route::post('quizzes-questions-excel/store', [QuizQuestionExcelController::class, 'store'])
         ->name('quizzes-questions.excel.store');
+});
+
+
+Route::prefix('student')->group(function () {
+    Route::get('/register', [StudentController::class, 'showRegisterForm'])->name('student.register');
+    Route::post('/register', [StudentController::class, 'register']);
+
+    Route::get('/login', [StudentController::class, 'showLoginForm'])->name('student.login');
+    Route::post('/login', [StudentController::class, 'login']);
+
+    Route::middleware('auth:student')->group(function () {
+        // Show Zoom join form
+
+        Route::get('/zoom/join', [ZoomController::class, 'showJoinForm'])->name('zoom.joinForm');
+
+        // Handle join form submission
+        Route::post('/zoom/join', [ZoomController::class, 'handleJoin'])->name('zoom.handleJoin');
+
+        // Load meeting page with generated signature
+        Route::get('/zoom/meeting/{meetingId}', [ZoomController::class, 'meeting'])->name('zoom.meeting');
+
+
+        Route::post('/logout', [StudentController::class, 'logout'])->name('student.logout');
+    });
 });
