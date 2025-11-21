@@ -14,7 +14,7 @@
     }
 
     :root {
-        --primary: #1C5A31 !important;
+        --primary: #6183b0 !important;
         --secondary: #BA1616 !important;
     }
 
@@ -54,29 +54,55 @@
         color: #fff !important;
     }
 
-    .text-primary { color: var(--primary) !important; }
+    .text-primary {
+        color: var(--primary) !important;
+    }
 
-    .text-secondary { color: var(--secondary) !important; }
-    .btn-secondary { background-color: var(--secondary) !important; color: #fff !important; border-color: var(--secondary) !important; }
+    .text-secondary {
+        color: var(--secondary) !important;
+    }
+
+    .btn-secondary {
+        background-color: var(--secondary) !important;
+        color: #fff !important;
+        border-color: var(--secondary) !important;
+    }
+
     .btn-outline-secondary {
         color: var(--secondary) !important;
         border-color: var(--secondary) !important;
         background-color: transparent !important;
     }
-    .btn-outline-secondary:hover { background-color: var(--secondary) !important; color: #fff !important; }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary) !important;
+        color: #fff !important;
+    }
 
 
 
-    .breadcrumb-item+.breadcrumb-item::before { padding-right: 0rem !important; content: ""; }
+    .breadcrumb-item+.breadcrumb-item::before {
+        padding-right: 0rem !important;
+        content: "";
+    }
 
     .form-control:focus,
-    .form-select:focus { border-color: var(--primary) !important; }
+    .form-select:focus {
+        border-color: var(--primary) !important;
+    }
 
-    .form-label, .form-check-label { color: var(--primary) !important; }
+    .form-label,
+    .form-check-label {
+        color: var(--primary) !important;
+    }
 
-    .active { color: var(--secondary) !important; }
+    .active {
+        color: var(--secondary) !important;
+    }
 
-    .editor-container { margin-bottom: 20px; }
+    .editor-container {
+        margin-bottom: 20px;
+    }
 
     .content-output {
         border: 1px solid #ddd;
@@ -105,79 +131,65 @@
 
 
     /* Remove bullets from main menu */
-.menu-inner > .menu-item {
-    list-style: none; /* no bullet for main menu items */
-    padding-left: 0;  /* remove default indentation */
-}
+    .menu-inner>.menu-item {
+        list-style: none;
+        /* no bullet for main menu items */
+        padding-left: 0;
+        /* remove default indentation */
+    }
 
-/* Optional: bullets for sub-menu items */
-.menu-sub > .menu-item {
-    margin-bottom: 16px;
-    list-style: disc outside; /* bullet outside the content box */
-    padding-left: 20px;        /* indent submenu items */
-}
+    /* Optional: bullets for sub-menu items */
+    .menu-sub>.menu-item {
+        margin-bottom: 16px;
+        list-style: disc outside;
+        /* bullet outside the content box */
+        padding-left: 20px;
+        /* indent submenu items */
+    }
 
-/* submenu link text */
-.menu-sub > .menu-item > .menu-link > div,
-.menu-sub > .menu-item > .menu-link > span {
-    display: inline; /* inline so bullet and text are on same line */
-}
-.menu-inner > .menu-item {
-        margin-bottom: 16px; /* vertical spacing between main menus */
+    /* submenu link text */
+    .menu-sub>.menu-item>.menu-link>div,
+    .menu-sub>.menu-item>.menu-link>span {
+        display: inline;
+        /* inline so bullet and text are on same line */
+    }
+
+    .menu-inner>.menu-item {
+        margin-bottom: 16px;
+        /* vertical spacing between main menus */
         padding-left: 0;
     }
 
-/* Remove default margin/padding on all ULs inside sidebar */
-.menu-inner{
-    margin: 10px;
-    padding: 20px;
-}
- .menu-sub {
-    margin: 10px;
-    padding: 10px;
-}
-.menu-link {
-    display: flex;
-    align-items: center; /* vertically center icon and text */
-    gap: 10px;           /* spacing between icon and text */
-}
+    /* Remove default margin/padding on all ULs inside sidebar */
+    .menu-inner {
+        margin: 10px;
+        padding: 20px;
+    }
 
+    .menu-sub {
+        margin: 10px;
+        padding: 10px;
+    }
 
+    .menu-link {
+        display: flex;
+        align-items: center;
+        /* vertically center icon and text */
+        gap: 10px;
+        /* spacing between icon and text */
+    }
 </style>
 
 <ul class="menu-inner py-2">
     {{-- Dashboard --}}
     <li class="menu-item">
-        <a href="{{route('dashboard')}}" class="menu-link">
+        <a href="{{ route('dashboard') }}" class="menu-link">
             <i class="menu-icon tf-icons bx bx-home-circle"></i>
             <span data-i18n="Analytics">Dashboard</span>
         </a>
     </li>
 
-    {{-- User Management --}}
-    <li class="menu-item">
-        <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-user"></i>
-            <div data-i18n="User Management">User Management</div>
-        </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-user-pin"></i><div>Operation Teams</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-group"></i><div>Students</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-check-shield"></i><div>Roles And Permissions</div></a></li>
-        </ul>
-    </li>
 
-    {{-- Category Management --}}
-    <li class="menu-item">
-        <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-category"></i>
-            <div data-i18n="Category Management">Category Management</div>
-        </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-book-open"></i><div>Courses</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-clipboard"></i><div>Quizzes</div></a></li>
-        </ul>
-    </li>
 
     {{-- Course Management --}}
     <li class="menu-item">
@@ -186,23 +198,18 @@
             <div data-i18n="Course Management">Course Management</div>
         </a>
         <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="{{route('admin.courses.index')}}" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Courses List</div></a></li>
-            <li class="menu-item"><a href="{{route('admin.courses.create')}}" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><div>Add Course</div></a></li>
+            <li class="menu-item"><a href="{{ route('admin.courses.index') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-list-ul"></i>
+                    <div>Courses List</div>
+                </a></li>
+            <li class="menu-item"><a href="{{ route('admin.courses.create') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-plus"></i>
+                    <div>Add Course</div>
+                </a></li>
         </ul>
     </li>
 
-    {{-- Live Class Management --}}
-    <li class="menu-item">
-        <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-video"></i>
-            <div data-i18n="Live Class Management">Live Class Management</div>
-        </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Live Classes</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><div>Schedule Live Class</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-video"></i><div>Manage Zoom</div></a></li>
-        </ul>
-    </li>
+
 
     {{-- Quiz Management --}}
     <li class="menu-item open">
@@ -217,35 +224,12 @@
                     <span>Quizzes List</span>
                 </a>
             </li>
-            <li class="menu-item"><a href="{{ route('admin.quizzes.create') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-plus"></i><span>Add Quiz</span></a></li>
+            <li class="menu-item"><a href="{{ route('admin.quizzes.create') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-plus"></i><span>Add Quiz</span></a></li>
         </ul>
     </li>
 
-    {{-- User Enrollments --}}
-    <li class="menu-item">
-        <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-clipboard"></i>
-            <div data-i18n="User Enrollments">User Enrollments</div>
-        </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Course Enrollments List</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Quizzes Enrollments List</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Live Class Enrollments List</div></a></li>
-        </ul>
-    </li>
 
-    {{-- Notifications --}}
-    <li class="menu-item">
-        <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bxs-megaphone"></i>
-            <div data-i18n="Notifications">Notification and Flash Notices</div>
-        </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Push Notifications</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Flash Notices</div></a></li>
-            <li class="menu-item"><a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-list-ul"></i><div>Manage Notices</div></a></li>
-        </ul>
-    </li>
 </ul>
 
 <script>
