@@ -1,15 +1,16 @@
 <?php
 
-use App\Http\Controllers\CascadeController;
-use App\Http\Controllers\CourseController;
-use App\Http\Controllers\CourseSectionController;
-use App\Http\Controllers\LessonController;
-use App\Http\Controllers\QuizController;
-use App\Http\Controllers\QuizQuestionController;
-use App\Http\Controllers\QuizQuestionExcelController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\ZoomController;
+use App\Events\ZoomMessageSent;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\ZoomController;
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\LessonController;
+use App\Http\Controllers\CascadeController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\QuizQuestionController;
+use App\Http\Controllers\CourseSectionController;
+use App\Http\Controllers\QuizQuestionExcelController;
 
 Route::get('/dashboard', function () {
     return view('pages.admin.dashboard');
@@ -70,25 +71,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 
-Route::prefix('student')->group(function () {
-    Route::get('/register', [StudentController::class, 'showRegisterForm'])->name('student.register');
-    Route::post('/register', [StudentController::class, 'register']);
 
-    Route::get('/login', [StudentController::class, 'showLoginForm'])->name('student.login');
-    Route::post('/login', [StudentController::class, 'login']);
+// Show Zoom join form
 
-    Route::middleware('auth:student')->group(function () {
-        // Show Zoom join form
+Route::get('/zoom/join', [ZoomController::class, 'showJoinForm'])->name('zoom.joinForm');
 
-        Route::get('/zoom/join', [ZoomController::class, 'showJoinForm'])->name('zoom.joinForm');
+// Handle join form submission
+Route::post('/zoom/join', [ZoomController::class, 'handleJoin'])->name('zoom.handleJoin');
 
-        // Handle join form submission
-        Route::post('/zoom/join', [ZoomController::class, 'handleJoin'])->name('zoom.handleJoin');
+// Load meeting page with generated signature
+Route::get('/zoom/meeting/{meetingId}', [ZoomController::class, 'meeting'])->name('zoom.meeting');
 
-        // Load meeting page with generated signature
-        Route::get('/zoom/meeting/{meetingId}', [ZoomController::class, 'meeting'])->name('zoom.meeting');
-
-
-        Route::post('/logout', [StudentController::class, 'logout'])->name('student.logout');
-    });
+Route::get('/send-test-popup', function() {
+    event(new ZoomMessageSent("Hello! Test popup"));
+    return "Message sent!";
 });

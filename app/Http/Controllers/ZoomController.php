@@ -13,13 +13,8 @@ class ZoomController extends Controller
     // Show join form (meeting number, name, passcode)
     public function showJoinForm()
     {
-        $student = auth('student')->user();
-
-        return view('zoom.join', [
-            'userName' => $student->name,
-        ]);
+        return view('zoom.join');
     }
-
 
     // Handle join form submission and save session
     public function handleJoin(Request $request)
@@ -48,7 +43,7 @@ class ZoomController extends Controller
         $role     = (int) session('zoom_role', 0);
         $passcode = session('zoom_passcode', '');
 
-        return view('zoom.meeting', [
+        return view('zoom', [
             'meetingId' => $meetingId,
             'signature' => $this->generateStaticSignature($meetingId, $role),
             'sdkKey'    => config('zoom.sdk_key'),

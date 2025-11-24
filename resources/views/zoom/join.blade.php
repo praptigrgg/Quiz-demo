@@ -70,7 +70,7 @@
             </div>
             <div class="mb-3">
                 <label for="user_name">Your Name</label>
-                <input type="text" name="user_name" value="{{ $userName }}" readonly>
+            <input type="text" name="user_name" id="user_name" required>
             </div>
             <div class="mb-3">
                 <label for="passcode">Meeting Passcode (optional)</label>
