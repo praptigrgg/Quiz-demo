@@ -51,13 +51,17 @@
         #popup-container {
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 20px;
+            /* move to right */
             z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            /* align popups to the right */
         }
 
         .broadcast-popup {
-            background-color: rgba(255, 0, 0, 0.9);
+            background-color: rgba(3, 62, 16, 0.9);
             /* bright red background */
             color: #fff;
             padding: 20px 30px;
@@ -214,6 +218,11 @@
         channel.bind('ZoomMessageSent', function(data) {
             showPopup(data.message);
         });
+
+        channel.bind('QuizAssigned', function(data) {
+            showPopup("You have been assigned a quiz: " + data.quizTitle);
+        });
+
 
         // Optional: log all received events
         channel.bind_global(function(eventName, data) {

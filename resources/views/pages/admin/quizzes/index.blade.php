@@ -128,6 +128,14 @@
                                                         </a>
                                                     </li>
                                                     <li>
+                                                        <a class="dropdown-item text-warning assign-quiz"
+                                                            href="javascript:void(0);" data-quiz-id="{{ $quiz->id }}"
+                                                            data-quiz-title="{{ $quiz->quizTitle }}">
+                                                            <i class="bx bx-send me-1"></i> Assign Quiz
+                                                        </a>
+                                                    </li>
+
+                                                    <li>
                                                         <a class="dropdown-item text-info"
                                                             href="{{ route('admin.quizzes.questions.index', $quiz->id) }}">
                                                             <i class="bx bx-question-mark me-1"></i> Manage Questions
@@ -281,6 +289,28 @@
 
                             publishUnpublishModal.show();
                         });
+                    });
+                });
+                document.querySelectorAll('.assign-quiz').forEach(btn => {
+                    btn.addEventListener('click', function() {
+
+                        const quizId = this.getAttribute('data-quiz-id');
+                        const quizTitle = this.getAttribute('data-quiz-title');
+
+                        if (!confirm(`Assign quiz: ${quizTitle}?`)) return;
+
+                        fetch(`/admin/quizzes/${quizId}/assign`, {
+                                method: 'POST',
+                                headers: {
+                                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                    "Content-Type": "application/json"
+                                },
+                            }).then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert("Quiz assigned!");
+                                }
+                            });
                     });
                 });
             </script>

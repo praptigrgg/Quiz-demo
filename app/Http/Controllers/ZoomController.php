@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Quiz;
 use Firebase\JWT\JWT;
+use App\Events\QuizAssigned;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ZoomController extends Controller
 {
@@ -79,4 +82,5 @@ class ZoomController extends Controller
 
         return JWT::encode($payload, $sdkSecret, 'HS256');
     }
+    
 }

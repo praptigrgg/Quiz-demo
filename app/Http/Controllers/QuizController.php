@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\QuizAssigned;
 use App\Models\Quiz;
 use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
@@ -182,12 +183,30 @@ class QuizController extends Controller
   public function getGroups($id)
 {
     $quiz = Quiz::findOrFail($id);
-    $groups = $quiz->quiz_groups ?? []; 
+    $groups = $quiz->quiz_groups ?? [];
 
     return response()->json([
         'groups' => $groups
     ]);
 }
 
+public function assignQuiz($id)
+    {
+        try {
+            $quiz = Quiz::findOrFail($id);
 
+            // Broadcast event to everyone (no user check)
+            event(new QuizAssigned($quiz));
+
+            return response()->json([
+                'success' => true,
+                'quizTitle' => $quiz->quizTitle
+            ]);
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

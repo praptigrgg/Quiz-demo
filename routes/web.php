@@ -68,6 +68,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Excel upload
     Route::post('quizzes-questions-excel/store', [QuizQuestionExcelController::class, 'store'])
         ->name('quizzes-questions.excel.store');
+
+
+    Route::post('quizzes/{id}/assign', [QuizController::class, 'assignQuiz'])
+        ->name('quizzes.assign');
 });
 
 
@@ -82,7 +86,7 @@ Route::post('/zoom/join', [ZoomController::class, 'handleJoin'])->name('zoom.han
 // Load meeting page with generated signature
 Route::get('/zoom/meeting/{meetingId}', [ZoomController::class, 'meeting'])->name('zoom.meeting');
 
-Route::get('/send-test-popup', function() {
+Route::get('/send-test-popup', function () {
     event(new ZoomMessageSent("Hello! Test popup"));
     return "Message sent!";
 });
