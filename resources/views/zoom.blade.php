@@ -10,8 +10,7 @@
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/3.12.0/css/bootstrap.css" />
 
     <style>
-        html,
-        body {
+        html, body {
             height: 100%;
             margin: 0;
         }
@@ -52,37 +51,42 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            /* move to right */
             z-index: 10001;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            /* align popups to the right */
         }
 
         .broadcast-popup {
             background-color: rgba(3, 62, 16, 0.9);
-            /* bright red background */
             color: #fff;
             padding: 20px 30px;
             border-radius: 8px;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             text-shadow: 1px 1px 3px #000;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
             margin-top: 10px;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: auto;
-            /* allow clicking the button */
-            text-align: center;
-            max-width: 90vw;
-            word-wrap: break-word;
+            text-align: left;
+            max-width: 400px;
+            max-height: 70vh;
+            overflow-y: auto;
             position: relative;
-            /* for close button positioning */
         }
 
-        /* Close button */
+        .broadcast-popup h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .broadcast-popup p {
+            margin: 5px 0;
+        }
+
         .broadcast-popup .close-btn {
             position: absolute;
             top: 5px;
@@ -93,13 +97,32 @@
             color: #fff;
             cursor: pointer;
         }
+
+        .quiz-option-label {
+            display: block;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quiz-option-label:hover {
+            background-color: #e0f7fa;
+        }
+
+        @media (max-width: 480px) {
+            .broadcast-popup {
+                max-width: 90vw;
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 
 <body>
-
     <div id="zmmtg-root"></div>
-    <div id="popup-container"></div> <!-- Popup container -->
+    <div id="popup-container"></div>
 
     <!-- Zoom Web SDK scripts -->
     <script src="https://source.zoom.us/3.12.0/lib/vendor/react.min.js"></script>
@@ -189,47 +212,112 @@
 
         const channel = pusher.subscribe('zoom-chat');
 
-        function showPopup(message) {
-            console.log('Showing popup:', message);
-            const container = document.getElementById('popup-container');
+        // ---------- Show Quiz Popup ----------
+        function showPopup(data) {
+            if (!data || !data.quizTitle) return;
 
+            const quiz = data.quizTitle;
+            const container = document.getElementById('popup-container');
             const popup = document.createElement('div');
             popup.className = 'broadcast-popup';
-            popup.innerText = message;
 
-            // Add close button
+            let html = `<h3>${quiz.quizTitle || 'Untitled Quiz'}</h3>`;
+            if (quiz.quizDescription) html += `<p>${quiz.quizDescription}</p>`;
+
+            if (quiz.questions && quiz.questions.length) {
+                quiz.questions.forEach((q, index) => {
+                    html += `<div class="quiz-question" style="margin-bottom:15px;">
+                        <p><strong>Q${index + 1}:</strong> ${q.questionText || 'No question text'}</p>
+                        <ul style="list-style:none; padding-left:0;">`;
+
+                    if (q.options && q.options.length) {
+                        q.options.forEach(opt => {
+                            html += `<li>
+                                <label class="quiz-option-label">
+                                    <input type="radio" name="q${index}" value="${opt.optionText || ''}" data-is-correct="${opt.isCorrect}"> ${opt.optionText || ''}
+                                </label>
+                             </li>`;
+                        });
+                    }
+                    html += `</ul>
+                     <p class="explanation" style="display:none; font-style:italic; color:#fff;"></p>
+                     </div>`;
+                });
+
+                html += `<button id="submitQuizBtn" style="
+                    background-color: #03623c;
+                    color: #fff;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    margin-top: 10px;
+                ">Submit</button>`;
+            } else {
+                html += '<p>No questions available.</p>';
+            }
+
+            popup.innerHTML = html;
+
             const closeBtn = document.createElement('button');
             closeBtn.className = 'close-btn';
-            closeBtn.innerHTML = '&times;'; // × symbol
+            closeBtn.innerHTML = '&times;';
             closeBtn.onclick = () => {
                 popup.style.opacity = '0';
-                setTimeout(() => container.removeChild(popup), 300); // fade out
+                setTimeout(() => container.removeChild(popup), 300);
             };
             popup.appendChild(closeBtn);
 
             container.appendChild(popup);
+            popup.offsetWidth;
+            popup.style.opacity = '1';
 
-            popup.offsetWidth; // force reflow
-            popup.style.opacity = '1'; // fade in
+            const submitBtn = document.getElementById('submitQuizBtn');
+            if (submitBtn) {
+                submitBtn.onclick = () => {
+                    let correctCount = 0;
+                    const questionDivs = popup.querySelectorAll('.quiz-question');
+                    questionDivs.forEach((qDiv, index) => {
+                        const selected = qDiv.querySelector(`input[name="q${index}"]:checked`);
+                        const explanationEl = qDiv.querySelector('.explanation');
+
+                        if (quiz.questions[index].explanation) {
+                            explanationEl.textContent = "Explanation: " + quiz.questions[index].explanation;
+                            explanationEl.style.display = 'block';
+                        }
+
+                        qDiv.querySelectorAll('input[name="q' + index + '"]').forEach(input => {
+                            if (input.dataset.isCorrect === "1") {
+                                input.parentElement.style.backgroundColor = '#c8e6c9';
+                                if(selected === input) correctCount++;
+                            } else if (selected && selected !== input) {
+                                input.parentElement.style.backgroundColor = '#ffcdd2';
+                            }
+                        });
+                    });
+
+                    const scoreEl = document.createElement('p');
+                    scoreEl.textContent = `You scored ${correctCount} out of ${quiz.questions.length}`;
+                    scoreEl.style.marginTop = '10px';
+                    popup.appendChild(scoreEl);
+
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Submitted';
+                };
+            }
         }
 
-
-        // **Correct event binding**
-        channel.bind('ZoomMessageSent', function(data) {
-            showPopup(data.message);
-        });
-
         channel.bind('QuizAssigned', function(data) {
-            showPopup("You have been assigned a quiz: " + data.quizTitle);
+            console.log('QuizAssigned event received:', data);
+            showPopup(data);
         });
 
-
-        // Optional: log all received events
         channel.bind_global(function(eventName, data) {
             console.log('Event received:', eventName, data);
         });
 
-        // ---------- Optional Zoom Listeners ----------
+        // ---------- Zoom Listeners ----------
         ZoomMtg.inMeetingServiceListener('onUserJoin', data => console.log('User joined', data));
         ZoomMtg.inMeetingServiceListener('onUserLeave', data => console.log('User left', data));
         ZoomMtg.inMeetingServiceListener('onMeetingStatus', data => console.log('Meeting status', data));
