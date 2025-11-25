@@ -180,36 +180,35 @@ class QuizController extends Controller
         }
     }
 
-  public function getGroups($id)
-{
-    $quiz = Quiz::findOrFail($id);
-    $groups = $quiz->quiz_groups ?? [];
-
-    return response()->json([
-        'groups' => $groups
-    ]);
-}
-
-// In QuizController
-public function assignQuiz($id)
-{
-    try {
-        // Load quiz with questions and options
-        $quiz = Quiz::with(['questions.options'])->findOrFail($id);
-
-        // Broadcast event
-        event(new QuizAssigned($quiz));
+    public function getGroups($id)
+    {
+        $quiz = Quiz::findOrFail($id);
+        $groups = $quiz->quiz_groups ?? [];
 
         return response()->json([
-            'success' => true,
-            'quizTitle' => $quiz->quizTitle
+            'groups' => $groups
         ]);
-    } catch (\Exception $e) {
-        Log::error($e);
-        return response()->json([
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 
+    // In QuizController
+    public function assignQuiz($id)
+    {
+        try {
+            $quiz = Quiz::with(['questions.options'])->findOrFail($id);
+            $meetingId = request()->meeting_id;
+
+            event(new QuizAssigned($quiz, $meetingId));
+
+            return response()->json([
+                'success' => true,
+                'quizTitle' => $quiz->quizTitle,
+                'meetingId' => $meetingId
+            ]);
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

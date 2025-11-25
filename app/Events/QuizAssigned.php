@@ -12,16 +12,18 @@ class QuizAssigned implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $quizTitle;
+    public $quiz;
+    public $meetingId;
 
-    public function __construct($quizTitle)
+    public function __construct($quiz, $meetingId)
     {
-        $this->quizTitle = $quizTitle;
+        $this->quiz = $quiz;
+        $this->meetingId = $meetingId;
     }
 
     public function broadcastOn()
     {
-        return new Channel('zoom-chat');
+        return new Channel('zoom-meeting.' . $this->meetingId);
     }
 
     public function broadcastAs()
@@ -29,3 +31,4 @@ class QuizAssigned implements ShouldBroadcastNow
         return 'QuizAssigned';
     }
 }
+

@@ -128,6 +128,7 @@
                                                         </a>
                                                     </li>
                                                     <li>
+
                                                         <a class="dropdown-item text-warning assign-quiz"
                                                             href="javascript:void(0);" data-quiz-id="{{ $quiz->id }}"
                                                             data-quiz-title="{{ $quiz->quizTitle }}">
@@ -206,6 +207,42 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Assign Quiz Modal -->
+            <div class="modal fade" id="assignQuizModal" tabindex="-1" aria-labelledby="assignQuizModalLabel"
+                aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="assignQuizForm">
+                            @csrf
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="assignQuizModalLabel">Assign Quiz to Meeting</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <p>You are assigning: <strong id="assignQuizName"></strong></p>
+
+                                <div class="mb-3">
+                                    <label for="meetingIdInput" class="form-label">Enter Zoom Meeting ID</label>
+                                    <input type="text" id="meetingIdInput" class="form-control"
+                                        placeholder="e.g. 123456789" required>
+                                </div>
+
+                                <input type="hidden" id="assignQuizId">
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Publish/Unpublish Modal -->
             <div class="modal fade" id="publishUnpublishModal" tabindex="-1"
@@ -291,27 +328,57 @@
                         });
                     });
                 });
-                document.querySelectorAll('.assign-quiz').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                document.addEventListener('DOMContentLoaded', function() {
 
-                        const quizId = this.getAttribute('data-quiz-id');
-                        const quizTitle = this.getAttribute('data-quiz-title');
+                    const assignQuizModal = new bootstrap.Modal(document.getElementById('assignQuizModal'));
 
-                        if (!confirm(`Assign quiz: ${quizTitle}?`)) return;
+                    document.querySelectorAll('.assign-quiz').forEach(btn => {
+                        btn.addEventListener('click', function() {
+
+                            const quizId = this.dataset.quizId;
+                            const quizTitle = this.dataset.quizTitle;
+
+                            // Fill modal data
+                            document.getElementById('assignQuizId').value = quizId;
+                            document.getElementById('assignQuizName').textContent = quizTitle;
+
+                            // Show modal
+                            assignQuizModal.show();
+                        });
+                    });
+
+                    // Handle submit
+                    document.getElementById('assignQuizForm').addEventListener('submit', function(e) {
+                        e.preventDefault();
+
+                        const quizId = document.getElementById('assignQuizId').value;
+                        const meetingId = document.getElementById('meetingIdInput').value;
+
+                        if (!meetingId.trim()) {
+                            alert("Please enter meeting ID");
+                            return;
+                        }
 
                         fetch(`/admin/quizzes/${quizId}/assign`, {
-                                method: 'POST',
+                                method: "POST",
                                 headers: {
                                     "X-CSRF-TOKEN": "{{ csrf_token() }}",
                                     "Content-Type": "application/json"
                                 },
-                            }).then(res => res.json())
+                                body: JSON.stringify({
+                                    meeting_id: meetingId
+                                })
+                            })
+                            .then(res => res.json())
                             .then(data => {
                                 if (data.success) {
-                                    alert("Quiz assigned!");
+                                    alert("Quiz assigned to meeting " + meetingId);
+                                    assignQuizModal.hide();
                                 }
-                            });
+                            })
+                            .catch(err => console.error(err));
                     });
+
                 });
             </script>
 
