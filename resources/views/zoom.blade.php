@@ -10,18 +10,10 @@
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/3.12.0/css/bootstrap.css" />
 
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+        html, body { height: 100%; margin: 0; }
+        #zmmtg-root { width: 100%; height: 100%; background: #000; }
 
-        #zmmtg-root {
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-
-        /* Hidden Zoom UI elements */
+        /* Hide Zoom UI you don’t want */
         #app-signal,
         .waiting-room-container .wr-default-bg,
         .waiting-room-container .wr-content-default,
@@ -32,21 +24,18 @@
             display: none !important;
         }
 
-        /* Floating watermark */
+        /* Watermark */
         .watermark {
             position: fixed;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255,255,255,0.8);
             padding: 5px 10px;
             border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            color: #333;
             z-index: 10000;
+            font-size: 14px;
             pointer-events: none;
-            white-space: nowrap;
         }
 
-        /* Quiz popup container */
+        /* Popup container */
         #popup-container {
             position: fixed;
             top: 20px;
@@ -54,56 +43,60 @@
             z-index: 10001;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
+            pointer-events: none;
         }
 
         .broadcast-popup {
-            background-color: rgba(3, 62, 16, 0.9);
+            background: rgba(6,66,38,0.96);
             color: #fff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            text-shadow: 1px 1px 3px #000;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-            margin-top: 10px;
+            padding: 18px 22px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.55);
             opacity: 0;
-            transition: opacity 0.3s;
+            transform: translateY(-12px);
+            transition: opacity .28s ease, transform .28s ease;
             pointer-events: auto;
-            text-align: left;
-            max-width: 400px;
-            max-height: 70vh;
-            overflow-y: auto;
-            position: relative;
+            margin-top: 12px;
         }
 
-        .broadcast-popup h3 {
-            margin: 0;
-            font-size: 20px;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            color: #fff;
-            cursor: pointer;
+        .broadcast-popup.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .quiz-option-label {
-            display: block;
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
             padding: 8px 12px;
-            margin-bottom: 5px;
-            border-radius: 5px;
+            margin-bottom: 6px;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .quiz-option-label:hover {
-            background-color: #e0f7fa;
+        .quiz-option-label:hover { background: rgba(255,255,255,0.18); }
+        .explanation { display: none; color: #d8ffd8; }
+
+        #submitQuizBtn {
+            background: #0a8a56;
+            color: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #submitQuizBtn:disabled {
+            background: #1e4b36;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media(max-width:600px){
+            #popup-container{ right:10px; left:10px; width:auto; }
         }
     </style>
 </head>
@@ -112,7 +105,7 @@
     <div id="zmmtg-root"></div>
     <div id="popup-container"></div>
 
-    <!-- Zoom Web SDK -->
+    <!-- Zoom SDK -->
     <script src="https://source.zoom.us/3.12.0/lib/vendor/react.min.js"></script>
     <script src="https://source.zoom.us/3.12.0/lib/vendor/react-dom.min.js"></script>
     <script src="https://source.zoom.us/3.12.0/lib/vendor/redux.min.js"></script>
@@ -130,175 +123,189 @@
         const signature = @json($signature);
         const sdkKey = @json($sdkKey);
 
-        /* --- Moving watermark --- */
-        const watermark = document.createElement('div');
-        watermark.className = 'watermark';
+        /* WATERMARK --------------------------------------- */
+
+        const watermark = document.createElement("div");
+        watermark.className = "watermark";
         document.body.appendChild(watermark);
 
         let x = 50, y = 50, dx = 1.5, dy = 1.5;
 
-        function updateWatermark() {
-            const now = new Date();
-            watermark.textContent = `${userName} | ${now.toLocaleString()}`;
+        function updateWatermark(){
+            watermark.textContent = userName + " | " + new Date().toLocaleString();
         }
-        setInterval(updateWatermark, 1000);
+        setInterval(updateWatermark,1000);
 
-        function animateWatermark() {
-            x += dx;
-            y += dy;
-
+        function animateWatermark(){
+            x += dx; y += dy;
             const maxX = window.innerWidth - watermark.offsetWidth;
             const maxY = window.innerHeight - watermark.offsetHeight;
-
-            if (x <= 0 || x >= maxX) dx = -dx;
-            if (y <= 0 || y >= maxY) dy = -dy;
-
-            watermark.style.left = x + 'px';
-            watermark.style.top = y + 'px';
-
+            if(x<=0 || x>=maxX) dx = -dx;
+            if(y<=0 || y>=maxY) dy = -dy;
+            watermark.style.left = x+"px";
+            watermark.style.top = y+"px";
             requestAnimationFrame(animateWatermark);
         }
         animateWatermark();
 
+        /* ZOOM JOIN --------------------------------------- */
 
-        /* --- Zoom SDK Init --- */
         ZoomMtg.preLoadWasm();
         ZoomMtg.prepareWebSDK();
-
         ZoomMtg.init({
             leaveUrl: "{{ url()->previous() }}",
-            disableCORP: !window.crossOriginIsolated,
-            success: function() {
+            success: () => {
                 ZoomMtg.join({
-                    sdkKey,
-                    signature,
-                    meetingNumber,
-                    passWord: meetingPassword,
-                    userName,
-                    success: res => console.log("Joined meeting", res),
-                    error: err => console.error(err)
+                    sdkKey, signature, meetingNumber,
+                    passWord: meetingPassword, userName
                 });
             }
         });
 
+        /* PUSHER LISTENERS -------------------------------- */
 
-        /* --- Pusher Setup --- */
         const pusher = new Pusher("{{ env('PUSHER_APP_KEY') }}", {
             cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
             forceTLS: true
         });
 
-        const channel = pusher.subscribe('zoom-meeting.' + meetingNumber);
+        const channel = pusher.subscribe("zoom-meeting." + meetingNumber);
 
+        /* QUEUE SYSTEM ------------------------------------ */
 
-        /* --- Show Quiz Popup --- */
-        function showPopup(data) {
-            console.log("Popup received data:", data);
+        let popupQueue = [];
+        let popupActive = false;
 
-            if (!data || !data.quiz) {
-                console.log("Popup blocked: invalid data");
+        function showPopupQueued(data){
+            popupQueue.push(data);
+            if(!popupActive) processQueue();
+        }
+
+        function processQueue(){
+            if(popupQueue.length === 0){
+                popupActive = false;
                 return;
             }
+            popupActive = true;
+            const next = popupQueue.shift();
+            showPopup(next,()=>{
+                popupActive = false;
+                processQueue();
+            });
+        }
 
+        /* POPUP + QUIZ ------------------------------------ */
+
+        function showPopup(data, onClose = ()=>{}){
             const quiz = data.quiz;
+            const container = document.getElementById("popup-container");
 
-            const container = document.getElementById('popup-container');
-            const popup = document.createElement('div');
-            popup.className = 'broadcast-popup';
+            const popup = document.createElement("div");
+            popup.className = "broadcast-popup";
+
+            /* TIMER BAR */
+            let timeLeft = quiz.timer ?? 30;
+
+            const timerBar = document.createElement("div");
+            timerBar.style.cssText="width:100%;background:rgba(255,255,255,0.2);height:12px;border-radius:6px;margin-bottom:15px;";
+            const timerFill = document.createElement("div");
+            timerFill.style.cssText="width:100%;height:100%;background:#ff9800;transition:width 1s linear;";
+            timerBar.appendChild(timerFill);
 
             let html = `<h3>${quiz.quizTitle}</h3>`;
-            if (quiz.quizDescription) {
-                html += `<p>${quiz.quizDescription}</p>`;
-            }
+            if(quiz.quizDescription) html+=`<p>${quiz.quizDescription}</p>`;
 
-            if (quiz.questions?.length) {
-                quiz.questions.forEach((q, i) => {
-                    html += `
-                        <div class="quiz-question">
-                            <p><strong>Q${i + 1}:</strong> ${q.questionText}</p>
-                            <ul style="padding-left:0; list-style:none;">
-                    `;
-
-                    q.options.forEach(opt => {
-                        html += `
-                            <li>
-                                <label class="quiz-option-label">
-                                    <input type="radio" name="q${i}" data-is-correct="${opt.isCorrect}">
-                                    ${opt.optionText}
-                                </label>
-                            </li>
-                        `;
-                    });
-
-                    html += `
-                            </ul>
-                            <p class="explanation" style="display:none; color:#fff; font-style:italic;"></p>
-                        </div>`;
-                });
-
+            html+=``;
+            quiz.questions.forEach((q,i)=>{
                 html += `
-                    <button id="submitQuizBtn" style="
-                        background:#03623c; color:#fff; border:none; padding:10px; border-radius:5px; margin-top:10px;">
-                        Submit
-                    </button>`;
-            }
+                <div class="quiz-question">
+                    <p><strong>Q${i+1}:</strong> ${q.questionText}</p>
+                    <ul style="list-style:none;padding-left:0;">`;
+                q.options.forEach(opt=>{
+                    html+=`
+                        <li>
+                            <label class="quiz-option-label">
+                                <input type="radio" name="q${i}" data-is-correct="${opt.isCorrect}">
+                                ${opt.optionText}
+                            </label>
+                        </li>`;
+                });
+                html+=`</ul>
+                    <p class="explanation"></p>
+                </div>`;
+            });
 
+            html += `<button id="submitQuizBtn" disabled>Submit</button>`;
             popup.innerHTML = html;
-
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'close-btn';
-            closeBtn.innerHTML = "&times;";
-            closeBtn.onclick = () => popup.remove();
-            popup.appendChild(closeBtn);
-
+            popup.prepend(timerBar);
             container.appendChild(popup);
+            setTimeout(()=> popup.classList.add("show"),20);
 
-            setTimeout(() => popup.style.opacity = 1, 10);
+            const submitBtn = popup.querySelector("#submitQuizBtn");
 
-            /* Quiz submission logic */
-            const submitBtn = document.getElementById('submitQuizBtn');
-            if (submitBtn) {
-                submitBtn.onclick = () => {
-                    let score = 0;
+            /* REQUIRE ANSWERING ALL QUESTIONS */
+            popup.querySelectorAll(".quiz-question").forEach((qDiv,idx)=>{
+                qDiv.addEventListener("change", ()=>{
+                    const allAnswered = [...popup.querySelectorAll(".quiz-question")].every((q,i)=>
+                        q.querySelector(`input[name="q${i}"]:checked`)
+                    );
+                    submitBtn.disabled = !allAnswered;
+                });
+            });
 
-                    const questions = popup.querySelectorAll('.quiz-question');
-                    questions.forEach((qDiv, idx) => {
-                        const selected = qDiv.querySelector(`input[name="q${idx}"]:checked`);
-                        const explanation = qDiv.querySelector('.explanation');
+            /* TIMER COUNTDOWN */
+            const countdown = setInterval(()=>{
+                timeLeft--;
+                timerFill.style.width = (timeLeft / (quiz.timer ?? 30))*100 + "%";
+                if(timeLeft <= 0){
+                    clearInterval(countdown);
+                    submitBtn.click();
+                }
+            },1000);
 
-                        qDiv.querySelectorAll(`input[name="q${idx}"]`).forEach(inp => {
-                            if (inp.dataset.isCorrect === "1") {
-                                inp.parentElement.style.backgroundColor = "#c8e6c9";
-                                if (selected === inp) score++;
-                            } else if (selected && selected !== inp) {
-                                inp.parentElement.style.backgroundColor = "#ffcdd2";
-                            }
-                        });
+            /* SUBMIT QUIZ */
+            submitBtn.onclick = ()=>{
+                clearInterval(countdown);
 
-                        if (quiz.questions[idx].explanation) {
-                            explanation.textContent = "Explanation: " + quiz.questions[idx].explanation;
-                            explanation.style.display = "block";
+                let score = 0;
+                popup.querySelectorAll(".quiz-question").forEach((qDiv,idx)=>{
+                    const selected = qDiv.querySelector(`input[name="q${idx}"]:checked`);
+                    const explanation = qDiv.querySelector(".explanation");
+
+                    qDiv.querySelectorAll(`input[name="q${idx}"]`).forEach(inp=>{
+                        const isCorrect = inp.dataset.isCorrect === "1";
+                        if(isCorrect){
+                            inp.parentElement.style.background="#c8e6c9";
+                            if(selected === inp) score++;
+                        } else if(selected === inp){
+                            inp.parentElement.style.background="#ffcdd2";
                         }
                     });
 
-                    const result = document.createElement("p");
-                    result.textContent = `You scored ${score} out of ${quiz.questions.length}`;
-                    result.style.marginTop = "10px";
-                    popup.appendChild(result);
+                    if(quiz.questions[idx].explanation){
+                        explanation.textContent = "Explanation: " + quiz.questions[idx].explanation;
+                        explanation.style.display="block";
+                    }
+                });
 
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = "Submitted";
-                };
-            }
+                const result = document.createElement("p");
+                result.style.marginTop = "10px";
+                result.style.fontWeight = "bold";
+                result.textContent = `You scored ${score} / ${quiz.questions.length}`;
+                popup.appendChild(result);
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Submitted";
+
+                setTimeout(()=>{
+                    popup.remove();
+                    onClose();
+                }, 2500);
+            };
         }
 
-        /* Bind event */
-        channel.bind("QuizAssigned", function(data) {
-            console.log("QuizAssigned event received:", data);
-            setTimeout(() => showPopup(data), 300);
-        });
-
+        /* EVENT LISTENER ---------------------------------- */
+        channel.bind("QuizAssigned", data => showPopupQueued(data));
     </script>
 </body>
-
 </html>
