@@ -229,6 +229,24 @@
         </ul>
     </li>
 
+    {{-- Custom Set Management --}}
+    <li class="menu-item open">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-clipboard"></i>
+            <div data-i18n="Custom Set Management">Custom Set Management</div>
+        </a>
+        <ul class="menu-sub" style="display:block;">
+            <li class="menu-item">
+                <a href="{{ route('admin.custom_sets.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-list-ul"></i>
+                    <span>Custom Set</span>
+                </a>
+            </li>
+            <li class="menu-item"><a href="{{ route('admin.custom_sets.create') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-plus"></i><span>Add Set</span></a></li>
+        </ul>
+    </li>
+
 
 </ul>
 

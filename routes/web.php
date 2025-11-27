@@ -11,6 +11,9 @@ use App\Http\Controllers\CascadeController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizQuestionController;
 use App\Http\Controllers\CourseSectionController;
+use App\Http\Controllers\CustomSetAnswerController;
+use App\Http\Controllers\CustomSetController;
+use App\Http\Controllers\CustomSetQuestionController;
 use App\Http\Controllers\QuizQuestionExcelController;
 
 Route::get('/dashboard', function () {
@@ -75,6 +78,54 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ->name('quizzes.assign');
 });
 
+Route::prefix('admin')->name('admin.')->group(function () {
+
+    // Custom Sets CRUD
+    Route::get('custom_sets', [CustomSetController::class, 'index'])->name('custom_sets.index');
+    Route::get('custom_sets/create', [CustomSetController::class, 'create'])->name('custom_sets.create');
+    Route::post('custom_sets', [CustomSetController::class, 'store'])->name('custom_sets.store');
+    Route::get('custom_sets/{set}/edit', [CustomSetController::class, 'edit'])->name('custom_sets.edit');
+    Route::put('custom_sets/{set}', [CustomSetController::class, 'update'])->name('custom_sets.update');
+    Route::delete('custom_sets/{set}', [CustomSetController::class, 'destroy'])->name('custom_sets.destroy');
+
+    // Publish/unpublish toggle
+    Route::patch('custom_sets/{set}/toggle-publish', [CustomSetController::class, 'togglePublish'])
+        ->name('custom_sets.update-publish-status');
+
+    // Assign Custom Set to Meeting (AJAX)
+    Route::post('custom_sets/{set}/assign', [CustomSetController::class, 'assignToMeeting'])
+        ->name('custom_sets.assign');
+});
+Route::prefix('admin/custom_sets/{set}/questions')->name('admin.custom_sets.questions.')->group(function () {
+
+    // List questions
+    Route::get('/', [CustomSetQuestionController::class, 'index'])->name('index');
+
+    // Create/store new question
+    Route::post('/', [CustomSetQuestionController::class, 'store'])->name('store');
+
+
+    Route::get('import', [CustomSetQuestionController::class, 'import'])->name('import');
+
+    // Update/delete specific question
+    Route::put('{question}', [CustomSetQuestionController::class, 'update'])->name('update');
+
+    Route::delete('{question}', [CustomSetQuestionController::class, 'destroy'])->name('destroy');
+});
+Route::prefix('admin/custom_sets/questions/{question}/answers')->name('questions.answers.')->group(function () {
+
+    // Store new answer
+    Route::post('/', [CustomSetAnswerController::class, 'store'])->name('store');
+
+    // Update/delete specific answer
+    Route::put('{answer}', [CustomSetAnswerController::class, 'update'])->name('update');
+    Route::delete('{answer}', [CustomSetAnswerController::class, 'destroy'])->name('destroy');
+});
+
+
+
+
+//Frontend
 Route::get('/login', [StudentAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [StudentAuthController::class, 'login'])->name('login.post');
 
