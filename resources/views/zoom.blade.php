@@ -1,41 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <title>Zoom Meeting</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+@section('content')
+    <div class="container">
+        <div id="zmmtg-root"></div>
+        <div id="popup-container"></div>
+        <div id="debug-log"></div>
+    </div>
 
     <!-- Zoom SDK CSS -->
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/3.12.0/css/bootstrap.css" />
 
     <style>
-        html, body { height: 100%; margin: 0; }
-        #zmmtg-root { width: 100%; height: 100%; background: #000; }
-
-        /* Hide Zoom UI you don’t want */
-        #app-signal,
-        .waiting-room-container .wr-default-bg,
-        .waiting-room-container .wr-content-default,
-        .page-footer,
-        #participant,
-        .more-button__item-box,
-        .wr-header {
-            display: none !important;
+        html,
+        body {
+            height: 100%;
+            margin: 0;
         }
 
-        /* Watermark */
-        .watermark {
-            position: fixed;
-            background-color: rgba(255,255,255,0.8);
-            padding: 5px 10px;
-            border-radius: 5px;
-            z-index: 10000;
-            font-size: 14px;
-            pointer-events: none;
+        #zmmtg-root {
+            width: 100%;
+            height: 100%;
+            background: #000;
         }
 
-        /* Popup container */
+        /* Popup dashboard */
         #popup-container {
             position: fixed;
             top: 20px;
@@ -47,13 +35,13 @@
         }
 
         .broadcast-popup {
-            background: rgba(6,66,38,0.96);
+            background: rgba(6, 66, 38, 0.96);
             color: #fff;
             padding: 18px 22px;
             border-radius: 12px;
             max-width: 500px;
             width: 100%;
-            box-shadow: 0 10px 24px rgba(0,0,0,0.55);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
             opacity: 0;
             transform: translateY(-12px);
             transition: opacity .28s ease, transform .28s ease;
@@ -66,46 +54,25 @@
             transform: translateY(0);
         }
 
-        .quiz-option-label {
-            display: flex;
-            align-items: center;
-            background: rgba(255,255,255,0.08);
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin-bottom: 6px;
-            cursor: pointer;
-        }
-
-        .quiz-option-label:hover { background: rgba(255,255,255,0.18); }
-        .explanation { display: none; color: #d8ffd8; }
-
-        #submitQuizBtn {
-            background: #0a8a56;
+        /* Debug console */
+        #debug-log {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            max-height: 260px;
+            width: 360px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.75);
             color: #fff;
+            font-size: 12px;
+            padding: 10px;
             border-radius: 8px;
-            padding: 12px;
-            width: 100%;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #submitQuizBtn:disabled {
-            background: #1e4b36;
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        @media(max-width:600px){
-            #popup-container{ right:10px; left:10px; width:auto; }
+            z-index: 10002;
+            font-family: monospace;
         }
     </style>
-</head>
 
-<body>
-    <div id="zmmtg-root"></div>
-    <div id="popup-container"></div>
-
-    <!-- Zoom SDK -->
+    <!-- Zoom & Pusher SDKs -->
     <script src="https://source.zoom.us/3.12.0/lib/vendor/react.min.js"></script>
     <script src="https://source.zoom.us/3.12.0/lib/vendor/react-dom.min.js"></script>
     <script src="https://source.zoom.us/3.12.0/lib/vendor/redux.min.js"></script>
@@ -113,199 +80,239 @@
     <script src="https://source.zoom.us/3.12.0/lib/vendor/lodash.min.js"></script>
     <script src="https://source.zoom.us/3.12.0/zoom-meeting-3.12.0.min.js"></script>
 
-    <!-- Pusher -->
     <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
 
     <script>
+        /* ----------------------------------------------------------
+           CONFIG FROM BACKEND
+        ---------------------------------------------------------- */
         const meetingNumber = @json($meetingId);
         const meetingPassword = @json($passCode);
         const userName = @json($userName);
         const signature = @json($signature);
         const sdkKey = @json($sdkKey);
 
-        /* WATERMARK --------------------------------------- */
+        /* ----------------------------------------------------------
+           DEBUG LOGGER
+        ---------------------------------------------------------- */
+        function debugLog(msg) {
+            console.log(msg);
 
-        const watermark = document.createElement("div");
-        watermark.className = "watermark";
-        document.body.appendChild(watermark);
+            const logDiv = document.getElementById("debug-log");
+            const p = document.createElement("p");
+            p.textContent = msg;
 
-        let x = 50, y = 50, dx = 1.5, dy = 1.5;
-
-        function updateWatermark(){
-            watermark.textContent = userName + " | " + new Date().toLocaleString();
+            logDiv.appendChild(p);
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
-        setInterval(updateWatermark,1000);
 
-        function animateWatermark(){
-            x += dx; y += dy;
-            const maxX = window.innerWidth - watermark.offsetWidth;
-            const maxY = window.innerHeight - watermark.offsetHeight;
-            if(x<=0 || x>=maxX) dx = -dx;
-            if(y<=0 || y>=maxY) dy = -dy;
-            watermark.style.left = x+"px";
-            watermark.style.top = y+"px";
-            requestAnimationFrame(animateWatermark);
-        }
-        animateWatermark();
+        /* Capture JS errors */
+        window.onerror = function(message, source, lineno, colno, error) {
+            debugLog("JS ERROR: " + message + " at " + source + ":" + lineno);
+        };
 
-        /* ZOOM JOIN --------------------------------------- */
+        /* ----------------------------------------------------------
+           DEBUG OUTPUT START
+        ---------------------------------------------------------- */
+        debugLog("🔧 Debug window active.");
+        debugLog("Meeting Number: " + meetingNumber);
+        debugLog("Subscribing to: zoom-meeting." + meetingNumber);
 
+        /* ----------------------------------------------------------
+           ZOOM INIT
+        ---------------------------------------------------------- */
         ZoomMtg.preLoadWasm();
         ZoomMtg.prepareWebSDK();
+
         ZoomMtg.init({
             leaveUrl: "{{ url()->previous() }}",
             success: () => {
+                debugLog("Zoom SDK initialized");
+
                 ZoomMtg.join({
-                    sdkKey, signature, meetingNumber,
-                    passWord: meetingPassword, userName
+                    sdkKey,
+                    signature,
+                    meetingNumber,
+                    passWord: meetingPassword,
+                    userName,
+                    success: () => debugLog("Joined Zoom meeting"),
+                    error: err => debugLog("Zoom join error: " + JSON.stringify(err))
                 });
-            }
+            },
+            error: err => debugLog("Zoom init error: " + JSON.stringify(err))
         });
 
-        /* PUSHER LISTENERS -------------------------------- */
-
+        /* ----------------------------------------------------------
+           PUSHER INIT + ADVANCED DEBUGGING
+        ---------------------------------------------------------- */
         const pusher = new Pusher("{{ env('PUSHER_APP_KEY') }}", {
             cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
             forceTLS: true
         });
 
+        debugLog("Connecting to Pusher...");
+
+        pusher.connection.bind("connected", () => debugLog("🟢 Pusher connected"));
+        pusher.connection.bind("state_change", state => debugLog("Pusher state: " + JSON.stringify(state)));
+        pusher.connection.bind("error", err => debugLog("🔴 Pusher error: " + JSON.stringify(err)));
+
         const channel = pusher.subscribe("zoom-meeting." + meetingNumber);
 
-        /* QUEUE SYSTEM ------------------------------------ */
+        channel.bind("pusher:subscription_succeeded", () => debugLog("🟢 Subscribed to channel"));
+        channel.bind("pusher:subscription_error", e => debugLog("🔴 Channel subscription error: " + JSON.stringify(e)));
 
+        /* ----------------------------------------------------------
+           POPUP QUEUE SYSTEM
+        ---------------------------------------------------------- */
         let popupQueue = [];
         let popupActive = false;
 
-        function showPopupQueued(data){
+        function showPopupQueued(data) {
             popupQueue.push(data);
-            if(!popupActive) processQueue();
+            if (!popupActive) processQueue();
         }
 
-        function processQueue(){
-            if(popupQueue.length === 0){
+        function processQueue() {
+            if (!popupQueue.length) {
                 popupActive = false;
                 return;
             }
             popupActive = true;
+
             const next = popupQueue.shift();
-            showPopup(next,()=>{
+            showPopup(next, () => {
                 popupActive = false;
                 processQueue();
             });
         }
 
-        /* POPUP + QUIZ ------------------------------------ */
+        /* ----------------------------------------------------------
+           POPUP RENDERER
+        ---------------------------------------------------------- */
+        function showPopup(data, onClose = () => {}) {
+            debugLog("Rendering popup...");
 
-        function showPopup(data, onClose = ()=>{}){
-            const quiz = data.quiz;
+            const activity = data.assignable;
             const container = document.getElementById("popup-container");
 
             const popup = document.createElement("div");
             popup.className = "broadcast-popup";
 
-            /* TIMER BAR */
-            let timeLeft = quiz.timer ?? 30;
+            let html = `<h3>${activity.title}</h3>`;
+            if (activity.description) html += `<p>${activity.description}</p>`;
 
-            const timerBar = document.createElement("div");
-            timerBar.style.cssText="width:100%;background:rgba(255,255,255,0.2);height:12px;border-radius:6px;margin-bottom:15px;";
-            const timerFill = document.createElement("div");
-            timerFill.style.cssText="width:100%;height:100%;background:#ff9800;transition:width 1s linear;";
-            timerBar.appendChild(timerFill);
-
-            let html = `<h3>${quiz.quizTitle}</h3>`;
-            if(quiz.quizDescription) html+=`<p>${quiz.quizDescription}</p>`;
-
-            html+=``;
-            quiz.questions.forEach((q,i)=>{
-                html += `
-                <div class="quiz-question">
+            activity.questions.forEach((q, i) => {
+                html += `<div class="quiz-question">
                     <p><strong>Q${i+1}:</strong> ${q.questionText}</p>
                     <ul style="list-style:none;padding-left:0;">`;
-                q.options.forEach(opt=>{
-                    html+=`
-                        <li>
-                            <label class="quiz-option-label">
-                                <input type="radio" name="q${i}" data-is-correct="${opt.isCorrect}">
-                                ${opt.optionText}
-                            </label>
-                        </li>`;
-                });
-                html+=`</ul>
-                    <p class="explanation"></p>
-                </div>`;
+
+                if (q.options && q.options.length) {
+                    q.options.forEach(opt => {
+                        html += `<li>
+                    <label>
+                        <input type="radio" name="q${i}"
+                            data-is-correct="${opt.isCorrect ? 1 : 0}"
+                            data-option-id="${opt.id}">
+                        ${opt.optionText}
+                    </label>
+                </li>`;
+                    });
+                } else {
+                    html += `<textarea name="q${i}" style="width:100%;height:60px;"></textarea>`;
+                }
+
+                html += `</ul></div>`;
             });
 
             html += `<button id="submitQuizBtn" disabled>Submit</button>`;
             popup.innerHTML = html;
-            popup.prepend(timerBar);
             container.appendChild(popup);
-            setTimeout(()=> popup.classList.add("show"),20);
 
+            setTimeout(() => popup.classList.add("show"), 20);
+
+            /* Enable / Disable submit */
             const submitBtn = popup.querySelector("#submitQuizBtn");
-
-            /* REQUIRE ANSWERING ALL QUESTIONS */
-            popup.querySelectorAll(".quiz-question").forEach((qDiv,idx)=>{
-                qDiv.addEventListener("change", ()=>{
-                    const allAnswered = [...popup.querySelectorAll(".quiz-question")].every((q,i)=>
-                        q.querySelector(`input[name="q${i}"]:checked`)
-                    );
-                    submitBtn.disabled = !allAnswered;
+            popup.querySelectorAll(".quiz-question").forEach((qDiv, idx) => {
+                qDiv.addEventListener("input", () => {
+                    const ready = [...popup.querySelectorAll(".quiz-question")].every((q, i) => {
+                        const radio = popup.querySelector(`input[name="q${i}"]:checked`);
+                        const text = popup.querySelector(`textarea[name="q${i}"]`);
+                        return radio || (text && text.value.trim() !== "");
+                    });
+                    submitBtn.disabled = !ready;
                 });
             });
 
-            /* TIMER COUNTDOWN */
-            const countdown = setInterval(()=>{
-                timeLeft--;
-                timerFill.style.width = (timeLeft / (quiz.timer ?? 30))*100 + "%";
-                if(timeLeft <= 0){
-                    clearInterval(countdown);
-                    submitBtn.click();
-                }
-            },1000);
+            /* Submit response */
+            submitBtn.onclick = async () => {
+                const responses = [];
 
-            /* SUBMIT QUIZ */
-            submitBtn.onclick = ()=>{
-                clearInterval(countdown);
+                activity.questions.forEach((q, i) => {
+                    const radio = popup.querySelector(`input[name="q${i}"]:checked`);
+                    const textarea = popup.querySelector(`textarea[name="q${i}"]`);
 
-                let score = 0;
-                popup.querySelectorAll(".quiz-question").forEach((qDiv,idx)=>{
-                    const selected = qDiv.querySelector(`input[name="q${idx}"]:checked`);
-                    const explanation = qDiv.querySelector(".explanation");
+                    responses.push({
+                        meeting_assignment_id: data.assignment_id,
+                        questionable_id: q.id,
 
-                    qDiv.querySelectorAll(`input[name="q${idx}"]`).forEach(inp=>{
-                        const isCorrect = inp.dataset.isCorrect === "1";
-                        if(isCorrect){
-                            inp.parentElement.style.background="#c8e6c9";
-                            if(selected === inp) score++;
-                        } else if(selected === inp){
-                            inp.parentElement.style.background="#ffcdd2";
-                        }
+                        questionable_type: data.assignable_type.includes("LiveSet") ?
+                            "App\\Models\\LiveSetQuestion" : "App\\Models\\QuizQuestion",
+
+                        selected_option_id: radio ? radio.dataset.optionId : null,
+                        subjective_answer: textarea ? textarea.value : null,
+                        is_correct: radio ? parseInt(radio.dataset.isCorrect) : null
                     });
-
-                    if(quiz.questions[idx].explanation){
-                        explanation.textContent = "Explanation: " + quiz.questions[idx].explanation;
-                        explanation.style.display="block";
-                    }
                 });
 
-                const result = document.createElement("p");
-                result.style.marginTop = "10px";
-                result.style.fontWeight = "bold";
-                result.textContent = `You scored ${score} / ${quiz.questions.length}`;
-                popup.appendChild(result);
+                debugLog("Submitting responses: " + JSON.stringify(responses));
+
+                try {
+                    const res = await fetch("/meeting-responses", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            responses
+                        })
+                    });
+
+                    debugLog("Server response: " + await res.text());
+                } catch (err) {
+                    debugLog("Error sending responses: " + err);
+                }
+
+                let score = responses.filter(r => r.is_correct).length;
+
+                const resultEl = document.createElement("p");
+                resultEl.style.fontWeight = "bold";
+                resultEl.style.marginTop = "10px";
+                resultEl.textContent = `You scored ${score} / ${activity.questions.length}`;
+                popup.appendChild(resultEl);
 
                 submitBtn.disabled = true;
                 submitBtn.textContent = "Submitted";
 
-                setTimeout(()=>{
+                setTimeout(() => {
                     popup.remove();
                     onClose();
                 }, 2500);
             };
         }
 
-        /* EVENT LISTENER ---------------------------------- */
-        channel.bind("QuizAssigned", data => showPopupQueued(data));
+        /* ----------------------------------------------------------
+           EVENT LISTENER
+        ---------------------------------------------------------- */
+        // Listen for ActivityAssigned event
+        channel.bind("ActivityAssigned", data => {
+            debugLog("🟢 ActivityAssigned event received");
+            console.log("🎯 Assigned Activity Data:", data);
+
+            debugLog(`Assigned activity title: ${data.assignable.title}`);
+
+            // Show the popup
+            showPopupQueued(data);
+        });
     </script>
-</body>
-</html>
+@endsection

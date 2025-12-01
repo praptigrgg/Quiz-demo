@@ -64,6 +64,9 @@ public function courses()
     return $this->belongsToMany(Course::class, 'course_section_quiz', 'quiz_id', 'course_id');
 }
 
-
+public function meetingAssignments()
+{
+    return $this->morphMany(MeetingAssignment::class, 'assignable');
+}
 
 }

@@ -32,4 +32,11 @@ class QuizQuestion extends Model
     {
         return $this->hasMany(QuizOption::class, 'question_id');
     }
+    
+    // Responses
+    public function responses()
+    {
+        return $this->morphMany(MeetingResponse::class, 'questionable');
+        // 'questionable' is the polymorphic name in meeting_responses
+    }
 }

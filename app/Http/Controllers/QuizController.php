@@ -190,25 +190,5 @@ class QuizController extends Controller
         ]);
     }
 
-    // In QuizController
-    public function assignQuiz($id)
-    {
-        try {
-            $quiz = Quiz::with(['questions.options'])->findOrFail($id);
-            $meetingId = request()->meeting_id;
-
-            event(new QuizAssigned($quiz, $meetingId));
-
-            return response()->json([
-                'success' => true,
-                'quizTitle' => $quiz->quizTitle,
-                'meetingId' => $meetingId
-            ]);
-        } catch (\Exception $e) {
-            Log::error($e);
-            return response()->json([
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+   
 }

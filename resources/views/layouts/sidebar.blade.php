@@ -229,21 +229,24 @@
         </ul>
     </li>
 
-    {{-- Custom Set Management --}}
-    <li class="menu-item open">
+
+    <li class="menu-item">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-clipboard"></i>
-            <div data-i18n="Custom Set Management">Custom Set Management</div>
+            <i class="menu-icon tf-icons bx bx-book"></i>
+            <div data-i18n="Assign To Zoom">Live Assignment</div>
         </a>
-        <ul class="menu-sub" style="display:block;">
-            <li class="menu-item">
-                <a href="{{ route('admin.custom_sets.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-list-ul"></i>
-                    <span>Custom Set</span>
+        <ul class="menu-sub" style="display:none;">
+            <li class="menu-item"><a href="{{ route('admin.live.assign.index') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-list-ul"></i>
+                    <div>Assignment List</div>
                 </a>
             </li>
-            <li class="menu-item"><a href="{{ route('admin.custom_sets.create') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-plus"></i><span>Add Set</span></a></li>
+            <li class="menu-item"><a href="{{ route('admin.live.assign.page') }}" class="menu-link"><i
+                        class="menu-icon tf-icons bx bx-plus"></i>
+                    <div>Assign Live</div>
+                </a>
+            </li>
+
         </ul>
     </li>
 

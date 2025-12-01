@@ -1,19 +1,23 @@
 <?php
 
 use App\Events\ZoomMessageSent;
-use App\Http\Controllers\Auth\StudentAuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Request;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ZoomController;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\CascadeController;
-use App\Http\Controllers\StudentController;
+use App\Http\Controllers\LiveSetController;
+use App\Http\Controllers\CustomSetController;
 use App\Http\Controllers\QuizQuestionController;
 use App\Http\Controllers\CourseSectionController;
 use App\Http\Controllers\CustomSetAnswerController;
-use App\Http\Controllers\CustomSetController;
+use App\Http\Controllers\MeetingResponseController;
+use App\Http\Controllers\Auth\StudentAuthController;
 use App\Http\Controllers\CustomSetQuestionController;
+use App\Http\Controllers\MeetingAssignmentController;
 use App\Http\Controllers\QuizQuestionExcelController;
 
 Route::get('/dashboard', function () {
@@ -78,51 +82,27 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ->name('quizzes.assign');
 });
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin/live')->group(function () {
+       Route::get('index', [LiveSetController::class, 'index'])->name('admin.live.assign.index');
+    Route::get('assign', [LiveSetController::class, 'assignPage'])->name('admin.live.assign.page');
+    Route::post('store-and-assign', [LiveSetController::class, 'storeAndAssign'])->name('admin.live.storeAndAssign');
+    Route::post('assign-to-meeting', [LiveSetController::class, 'assignToMeeting'])->name('admin.live.assignToMeeting');
+    Route::get('search', [LiveSetController::class, 'search'])->name('admin.live.search');
 
-    // Custom Sets CRUD
-    Route::get('custom_sets', [CustomSetController::class, 'index'])->name('custom_sets.index');
-    Route::get('custom_sets/create', [CustomSetController::class, 'create'])->name('custom_sets.create');
-    Route::post('custom_sets', [CustomSetController::class, 'store'])->name('custom_sets.store');
-    Route::get('custom_sets/{set}/edit', [CustomSetController::class, 'edit'])->name('custom_sets.edit');
-    Route::put('custom_sets/{set}', [CustomSetController::class, 'update'])->name('custom_sets.update');
-    Route::delete('custom_sets/{set}', [CustomSetController::class, 'destroy'])->name('custom_sets.destroy');
+    Route::get('assign/{assignment}/participants', [LiveSetController::class, 'participants'])
+        ->name('admin.live.participants');
+        Route::get('assign/{assignment}/student/{student}/answers', [LiveSetController::class, 'studentAnswers'])
+    ->name('admin.live.student.answers');
 
-    // Publish/unpublish toggle
-    Route::patch('custom_sets/{set}/toggle-publish', [CustomSetController::class, 'togglePublish'])
-        ->name('custom_sets.update-publish-status');
-
-    // Assign Custom Set to Meeting (AJAX)
-    Route::post('custom_sets/{set}/assign', [CustomSetController::class, 'assignToMeeting'])
-        ->name('custom_sets.assign');
-});
-Route::prefix('admin/custom_sets/{set}/questions')->name('admin.custom_sets.questions.')->group(function () {
-
-    // List questions
-    Route::get('/', [CustomSetQuestionController::class, 'index'])->name('index');
-
-    // Create/store new question
-    Route::post('/', [CustomSetQuestionController::class, 'store'])->name('store');
-
-
-    Route::get('import', [CustomSetQuestionController::class, 'import'])->name('import');
-
-    // Update/delete specific question
-    Route::put('{question}', [CustomSetQuestionController::class, 'update'])->name('update');
-
-    Route::delete('{question}', [CustomSetQuestionController::class, 'destroy'])->name('destroy');
-});
-Route::prefix('admin/custom_sets/questions/{question}/answers')->name('questions.answers.')->group(function () {
-
-    // Store new answer
-    Route::post('/', [CustomSetAnswerController::class, 'store'])->name('store');
-
-    // Update/delete specific answer
-    Route::put('{answer}', [CustomSetAnswerController::class, 'update'])->name('update');
-    Route::delete('{answer}', [CustomSetAnswerController::class, 'destroy'])->name('destroy');
+    Route::delete('assign/{id}', [LiveSetController::class, 'destroy'])->name('admin.live.destroy');
 });
 
 
+
+
+Route::post('/pusher/auth', function (Request $request) {
+    return Broadcast::auth($request);
+});
 
 
 //Frontend
@@ -143,6 +123,8 @@ Route::middleware('auth:student')->group(function () {
 
     // Load meeting page with generated signature
     Route::get('/zoom/meeting/{meetingId}', [ZoomController::class, 'meeting'])->name('zoom.meeting');
+
+    Route::post('/meeting-responses', [MeetingResponseController::class, 'store'])->name('meeting.responses.store');
 });
 
 
