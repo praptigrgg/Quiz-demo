@@ -29,7 +29,9 @@ return new class extends Migration
             // Subjective answer
             $table->longText('subjective_answer')->nullable();
 
+
             $table->float('score')->default(0);
+            $table->integer('elapsed_time')->nullable(); // time taken to submit in seconds
 
             $table->timestamps();
         });
@@ -40,4 +42,3 @@ return new class extends Migration
         Schema::dropIfExists('meeting_responses');
     }
 };
-

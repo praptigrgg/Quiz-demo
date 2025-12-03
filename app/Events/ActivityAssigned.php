@@ -17,10 +17,11 @@ class ActivityAssigned implements ShouldBroadcast
     public $assignable_type;
     public $assignable;
     public $meeting_id;
+    public $timer;       // ⭐ ADD THIS
 
     public function __construct(MeetingAssignment $assignment)
     {
-        // Load related assignable with questions + options
+        // Load questions + options
         $assignment->load([
             'assignable.questions.options'
         ]);
@@ -29,20 +30,20 @@ class ActivityAssigned implements ShouldBroadcast
         $this->assignable_type = class_basename($assignment->assignable_type);
         $this->assignable      = $assignment->assignable->toArray();
         $this->meeting_id      = $assignment->meeting_id;
+        $this->timer           = $assignment->timer ?? 30;   // ⭐ SAVE TIMER HERE
 
         Log::info("🔥 ActivityAssigned Event Constructed", [
             'meeting_id' => $this->meeting_id,
             'assignable_type' => $this->assignable_type,
+            'timer' => $this->timer
         ]);
     }
 
-public function broadcastOn()
-{
-    Log::info('ActivityAssigned::broadcastOn called for meeting_id: ' . $this->meeting_id);
-    return new Channel('zoom-meeting.' . $this->meeting_id);
-}
-
-
+    public function broadcastOn()
+    {
+        Log::info("📡 Broadcasting on zoom-meeting.{$this->meeting_id}");
+        return new Channel('zoom-meeting.' . $this->meeting_id);
+    }
 
     public function broadcastAs()
     {
@@ -54,7 +55,9 @@ public function broadcastOn()
         return [
             'assignment_id'   => $this->assignment_id,
             'assignable_type' => $this->assignable_type,
-            'assignable'      => $this->assignable
+            'assignable'      => $this->assignable,
+            'meeting_id'      => $this->meeting_id,
+            'timer'           => $this->timer    // ⭐ NOW IT WORKS
         ];
     }
 }

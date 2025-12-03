@@ -14,9 +14,12 @@ class MeetingAssignment extends Model
         'assignable_id',
         'assignable_type',
         'assigned_at',
+
+        // ⭐ TIMER ADDED
+        'timer',
     ];
 
-    // Polymorphic relation to Quiz or CustomSet
+    // Polymorphic relation to Quiz or LiveSet
     public function assignable()
     {
         return $this->morphTo();
@@ -27,8 +30,11 @@ class MeetingAssignment extends Model
     {
         return $this->hasMany(MeetingResponse::class);
     }
-    protected $casts = [
-    'assigned_at' => 'datetime',
-];
 
+    protected $casts = [
+        'assigned_at' => 'datetime',
+
+        // ⭐ CAST TIMER (ensures integer)
+        'timer' => 'integer',
+    ];
 }

@@ -48,8 +48,11 @@ class LiveSetController extends Controller
 
         $liveSet = LiveSet::create([
             'description' => $request->description ?? null,
+
+            // ⭐ TIMER ADDED (stored with Live Set)
             'timer' => $request->timer ?? 30,
-            'created_by' => null, // No auth, leave null
+
+            'created_by' => null, // No auth
         ]);
 
         foreach ($request->questions as $q) {
@@ -80,9 +83,11 @@ class LiveSetController extends Controller
     public function assignToMeeting(Request $request)
     {
         $request->validate([
-            'meeting_id' => 'required|string', // Zoom Meeting ID
+            'meeting_id' => 'required|string',
             'assignable_type' => 'required|in:quiz,live',
             'assignable_id' => 'required|integer',
+            // ⭐ TIMER VALIDATION ADDED
+            'timer' => 'nullable|integer|min:1',
         ]);
 
         $modelClass = $request->assignable_type === 'quiz' ? Quiz::class : LiveSet::class;
@@ -96,16 +101,18 @@ class LiveSetController extends Controller
             [
                 'meeting_id' => $request->meeting_id,
                 'assigned_at' => now(),
+
+                // ⭐ STORE TIMER IN ASSIGNMENT
+                'timer' => $request->timer ?? $assignable->timer ?? null,
             ]
         );
 
-        // Prepare questions array with id, title, text, and type
         $questions = $assignable->questions->map(function ($q) use ($request) {
             return [
                 'id' => $q->id,
                 'title' => $q->title ?? null,
                 'questionText' => $q->questionText ?? null,
-                'type' => class_basename($q->assignable_type ?? $request->assignable_type), // optional
+                'type' => class_basename($q->assignable_type ?? $request->assignable_type),
             ];
         });
 
@@ -116,10 +123,10 @@ class LiveSetController extends Controller
             'success' => true,
             'assigned_at' => $assignment->assigned_at->format('d M, Y h:i A'),
             'questions' => $questions,
-            'assignment_id' => $assignment->id
+            'assignment_id' => $assignment->id,
+            'timer' => $assignment->timer // ⭐ RETURN ADDED
         ]);
     }
-
 
 
     /**
@@ -129,25 +136,27 @@ class LiveSetController extends Controller
     {
         $assignNow = $request->boolean('assignNow', true);
 
-        // Validate questions
         $request->validate([
             'questions' => 'required|array|min:1',
             'questions.*.questionText' => 'required|string',
             'questions.*.questionType' => 'required|string|in:mcq,true_false,subjective',
-            // Only require meeting_id if assigning now
             'meeting_id' => $assignNow ? 'required|string' : 'nullable|string',
+            // ⭐ TIMER VALIDATION
+            'timer' => 'nullable|integer|min:1',
         ]);
 
-        // Store the Live Set
+        // Store live set (timer is included automatically)
         $liveSet = $this->store($request);
 
-        // Assign if requested
         if ($assignNow && $request->filled('meeting_id')) {
             $assignment = MeetingAssignment::create([
                 'meeting_id' => $request->meeting_id,
                 'assignable_type' => LiveSet::class,
                 'assignable_id' => $liveSet->id,
                 'assigned_at' => now(),
+
+                // ⭐ STORE TIMER
+                'timer' => $request->timer ?? $liveSet->timer,
             ]);
 
             event(new ActivityAssigned($assignment));
@@ -156,14 +165,15 @@ class LiveSetController extends Controller
             return response()->json([
                 'success' => true,
                 'assignment_id' => $assignment->id,
+                'timer' => $assignment->timer,  // ⭐ RETURN
                 'message' => 'Live Set created & assigned successfully!'
             ]);
         }
 
-        // If not assigned now
         return response()->json([
             'success' => true,
             'live_set_id' => $liveSet->id,
+            'timer' => $liveSet->timer, // ⭐ RETURN
             'message' => 'Live Set created successfully! Not assigned to meeting.'
         ]);
     }
@@ -181,27 +191,36 @@ class LiveSetController extends Controller
         return response()->json($quizzes);
     }
 
-    public function participants($assignmentId)
-    {
-        $assignment = MeetingAssignment::with('responses.student')->findOrFail($assignmentId);
+   public function participants($assignmentId)
+{
+    $assignment = MeetingAssignment::with(['responses.student'])->findOrFail($assignmentId);
 
-        // Get unique students who submitted responses
-        $participants = $assignment->responses
-            ->pluck('student')
-            ->unique('id')
-            ->sortBy('name');
+    // Get unique students who have responses, with fastest elapsed_time
+    $participants = $assignment->responses
+        ->groupBy('student_id')
+        ->map(function ($responses, $studentId) {
+            $student = $responses->first()->student;
+            $student->firstResponse = $responses->sortBy('elapsed_time')->first(); // fastest response
+            $student->elapsed_time = $student->firstResponse?->elapsed_time;       // store elapsed time
+            return $student;
+        })
+        ->sortBy(function ($student) {
+            return $student->elapsed_time ?? PHP_INT_MAX; // fastest first
+        })
+        ->values(); // reset keys
 
-        return view('pages.admin.live.participants', compact('assignment', 'participants'));
-    }
+    return view('pages.admin.live.participants', compact('assignment', 'participants'));
+}
+
+
+
     public function studentAnswers($assignmentId, $studentId)
     {
-        // Load assignment with responses and their related question & selected option
         $assignment = MeetingAssignment::with([
-            'responses.questionable', // polymorphic relation for question
-            'responses.selectedOption' // selected MCQ option
+            'responses.questionable',
+            'responses.selectedOption'
         ])->findOrFail($assignmentId);
 
-        // Filter responses for the given student
         $responses = $assignment->responses
             ->where('student_id', $studentId)
             ->values()
@@ -235,11 +254,6 @@ class LiveSetController extends Controller
             'responses' => $responses,
         ]);
     }
-
-
-
-
-
 
     /**
      * Delete a meeting assignment

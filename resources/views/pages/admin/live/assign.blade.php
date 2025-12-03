@@ -24,6 +24,13 @@
                     </select>
                 </div>
 
+                {{-- Timer --}}
+                <div class="mb-3" id="timerContainer" style="display:none;">
+                    <label for="timer" class="form-label">Timer (minutes)</label>
+                    <input type="number" name="timer" id="timer" class="form-control"
+                        placeholder="Enter time limit in minutes">
+                </div>
+
                 {{-- Quiz Selection --}}
                 <div class="mb-3 position-relative" id="quizSelectContainer" style="display:none;">
                     <label for="quizSearch" class="form-label">Search and Select Quiz</label>
@@ -99,6 +106,7 @@
     const assignNowContainer = document.getElementById('assignNowContainer');
     const assignNowCheckbox = document.getElementById('assignNow');
     const meetingInput = document.getElementById('meeting_id');
+    const timerContainer = document.getElementById('timerContainer');
 
     let questionCount = 0;
 
@@ -107,6 +115,12 @@
         quizContainer.style.display = this.value === 'quiz' ? 'block' : 'none';
         liveContainer.style.display = this.value === 'live' ? 'block' : 'none';
         assignNowContainer.style.display = this.value === 'live' ? 'block' : 'none';
+
+        // Show timer for both quiz + live
+        timerContainer.style.display =
+            (this.value === 'quiz' || this.value === 'live') ? 'block' : 'none';
+
+        // Reset questions for live
         questionsContainer.innerHTML = '';
         questionCount = 0;
 
@@ -196,7 +210,7 @@
 
     addQuestionBtn.addEventListener('click', addQuestion);
 
-    // Question type change
+    // Question type change logic
     questionsContainer.addEventListener('change', function(e) {
         if (!e.target.classList.contains('questionType')) return;
         const type = e.target.value;
@@ -291,7 +305,7 @@
     document.getElementById('assignmentForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Convert FormData to proper JSON structure
+        // Convert FormData to proper JSON
         const formData = new FormData(this);
         const data = {};
         formData.forEach((value, key) => {
@@ -299,7 +313,6 @@
             let ref = data;
             keys.forEach((k, i) => {
                 if (i === keys.length - 1) {
-                    // Checkbox handling: convert "on" to 1
                     if (value === 'on') ref[k] = 1;
                     else ref[k] = value;
                 } else {
@@ -311,9 +324,12 @@
 
         // Include assignNow explicitly
         data.assignNow = assignNowCheckbox.checked ? 1 : 0;
+        // Timer explicitly
+        data.timer = document.getElementById('timer').value;
 
         const type = typeSelect.value;
         let url = '';
+
         if (type === 'quiz') url = "{{ route('admin.live.assignToMeeting') }}";
         else if (type === 'live') url = "{{ route('admin.live.storeAndAssign') }}";
         else {
@@ -338,6 +354,7 @@
                 quizContainer.style.display = 'none';
                 liveContainer.style.display = 'none';
                 assignNowContainer.style.display = 'none';
+                timerContainer.style.display = 'none';
                 toggleMeetingRequirement();
             } else {
                 alert('Error: ' + (res.message || 'Something went wrong'));

@@ -19,29 +19,28 @@ class MeetingResponse extends Model
         'subjective_answer',
         'is_correct',
         'score',
+        'elapsed_time', // NEW
+
     ];
 
     // Polymorphic relation for quiz or custom questions
-   public function questionable()
-{
-    return $this->morphTo();
-}
+    public function questionable()
+    {
+        return $this->morphTo();
+    }
 
-public function assignment()
-{
-    return $this->belongsTo(MeetingAssignment::class, 'meeting_assignment_id');
-}
+    public function assignment()
+    {
+        return $this->belongsTo(MeetingAssignment::class, 'meeting_assignment_id');
+    }
 
-public function student()
-{
-    return $this->belongsTo(Student::class, 'student_id');
-}
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
 
-public function selectedOption()
-{
-    return $this->belongsTo(LiveSetOption::class, 'selected_option_id');
-}
-
-
-   
+    public function selectedOption()
+    {
+        return $this->belongsTo(LiveSetOption::class, 'selected_option_id');
+    }
 }

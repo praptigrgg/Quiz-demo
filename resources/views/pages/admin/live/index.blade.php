@@ -2,76 +2,102 @@
 
 @section('content')
 <div class="container-fluid">
-    <h2 class="mb-4">Meeting Assignments</h2>
-    <p class="text-muted">Manage assigned meetings and their associated tasks here.</p>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-primary mb-1">Meeting Assignments</h2>
+                    <p class="text-muted mb-0">Manage assigned and unassigned live sets with ease.</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ route('admin.live.assign.index') }}" class="btn btn-outline-secondary">
+                        <i class="bx bx-reset me-1"></i>
+                    </a>
+                    <a href="{{ route('admin.live.assign.page') }}" class="btn btn-primary">
+                        <i class="bx bx-plus me-1"></i>
+                    </a>
+                </div>
+            </div>
 
-    {{-- Alert container --}}
-    <div id="alertContainer" class="mt-2"></div>
+            <div id="alertContainer" class="mb-3"></div>
+        </div>
 
-    {{-- Tabs --}}
-    <ul class="nav nav-tabs mb-3" id="assignmentTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active" id="all-assignments-tab" data-bs-toggle="tab" data-bs-target="#all-assignments"
-                type="button">Assigned Sets</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" id="unassigned-tab" data-bs-toggle="tab" data-bs-target="#unassigned"
-                type="button">Unassigned Sets</button>
-        </li>
-    </ul>
+        <div class="card-body">
+            {{-- Tabs --}}
+            <ul class="nav nav-tabs nav-fill" id="assignmentTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active py-3" data-bs-toggle="tab" data-bs-target="#all-assignments">Assigned Sets</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-3" data-bs-toggle="tab" data-bs-target="#unassigned">Unassigned Sets</button>
+                </li>
+            </ul>
 
-    <div class="tab-content" id="assignmentTabsContent">
-        {{-- Assigned Table --}}
-        <div class="tab-pane fade show active" id="all-assignments">
-            <div class="card shadow-sm">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped align-middle" id="assignedTable">
-                        <thead>
-                            <tr>
-                                <th>SN</th>
-                                <th>Question Text</th>
-                                <th>Task Type</th>
-                                <th>Meeting ID</th>
-                                <th>Assigned At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $sn = $assignedMeetings->firstItem() ?? 1; @endphp
-                            @forelse($assignedMeetings as $assignment)
-                                @foreach ($assignment->assignable->questions ?? [] as $question)
+            <div class="tab-content p-3">
+                {{-- Assigned Table --}}
+                <div class="tab-pane fade show active" id="all-assignments">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>S.N.</th>
+                                    <th>Set / Question</th>
+                                    <th>Task Type</th>
+                                    <th>Meeting ID</th>
+                                    <th>Assigned At</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php $sn = $assignedMeetings->firstItem() ?? 1; @endphp
+                                @forelse($assignedMeetings as $assignment)
+                                    @php $questions = $assignment->assignable->questions ?? []; @endphp
                                     <tr>
                                         <td>{{ $sn++ }}</td>
-                                        <td>{{ $question->title ?? ($question->questionText ?? 'N/A') }}</td>
-                                        <td>{{ class_basename($assignment->assignable_type) }}</td>
-                                        <td>{{ $assignment->meeting_id }}</td>
+                                        <td>
+                                            @if(count($questions) > 1)
+                                                <strong>
+                                                    @if(class_basename($assignment->assignable_type) === 'LiveSet')
+                                                        {{ $assignment->assignable->title ?? 'Live Set' }}
+                                                    @elseif(class_basename($assignment->assignable_type) === 'Quiz')
+                                                        {{ $assignment->assignable->quizTitle ?? 'Quiz' }}
+                                                    @else
+                                                        {{ $assignment->assignable->title ?? 'Assignment' }}
+                                                    @endif
+                                                </strong>
+                                                <button class="btn btn-sm btn-light ms-2 show-questions-btn" data-id="{{ $assignment->id }}">
+                                                    <i class="bi bi-chevron-down small"></i> Questions
+                                                </button>
+                                            @elseif(count($questions) === 1)
+                                                {{ $questions[0]->title ?? ($questions[0]->questionText ?? 'N/A') }}
+                                            @else
+                                                <em>No questions</em>
+                                            @endif
+                                        </td>
+                                        <td><span class="badge bg-info">{{ class_basename($assignment->assignable_type) }}</span></td>
+                                        <td><span class="fw-semibold">{{ $assignment->meeting_id }}</span></td>
                                         <td>{{ $assignment->assigned_at?->format('d M, Y h:i A') }}</td>
                                         <td class="text-center">
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-light text-dark" type="button"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
                                                     <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
                                                     <li>
-                                                        <a class="dropdown-item"
-                                                            href="{{ route('admin.live.participants', $assignment->id) }}">
-                                                            <i class="bi bi-people"></i> Participants(Students)
+                                                        <a class="dropdown-item" href="{{ route('admin.live.participants', $assignment->id) }}">
+                                                            <i class="bi bi-people me-2"></i>Participants
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item" href="#">
-                                                            <i class="bi bi-pencil-square"></i> Edit
+                                                            <i class="bi bi-pencil-square me-2"></i>Edit
                                                         </a>
                                                     </li>
                                                     <li>
-                                                        <form action="{{ route('admin.live.destroy', $assignment->id) }}"
-                                                            method="POST"
-                                                            onsubmit="return confirm('Delete this assignment?')">
-                                                            @csrf
-                                                            @method('DELETE')
+                                                        <form action="{{ route('admin.live.destroy', $assignment->id) }}" method="POST" onsubmit="return confirm('Delete this assignment?')">
+                                                            @csrf @method('DELETE')
                                                             <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="bi bi-trash"></i> Delete
+                                                                <i class="bi bi-trash me-2"></i>Delete
                                                             </button>
                                                         </form>
                                                     </li>
@@ -79,217 +105,134 @@
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">No assignments found</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="mt-2">
-                        {{ $assignedMeetings->links('pagination::bootstrap-5') }}
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        {{-- Unassigned Table --}}
-        <div class="tab-pane fade" id="unassigned">
-            <div class="card shadow-sm">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped align-middle" id="unassignedTable">
-                        <thead>
-                            <tr>
-                                <th>SN</th>
-                                <th>Question Text</th>
-                                <th>Task Type</th>
-                                <th>Created At</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $sn2 = 1; @endphp
-                            @forelse($unassignedLiveSets as $liveSet)
-                                @foreach ($liveSet->questions ?? [] as $question)
-                                    <tr data-assignable-id="{{ $liveSet->id }}" data-assignable-type="live">
-                                        <td>{{ $sn2++ }}</td>
-                                        <td>{{ $question->title ?? ($question->questionText ?? 'N/A') }}</td>
-                                        <td>LiveSet</td>
-                                        <td>{{ $liveSet->created_at->format('d M, Y') }}</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-success assign-btn" data-bs-toggle="modal"
-                                                data-bs-target="#assignMeetingModal"
-                                                data-assignable-id="{{ $liveSet->id }}" data-assignable-type="live">
-                                                Assign
-                                            </button>
-                                        </td>
+                                    {{-- Hidden Questions for multiple-question sets --}}
+                                    @if(count($questions) > 1)
+                                        <tr class="question-row" id="q-{{ $assignment->id }}" style="display:none;">
+                                            <td colspan="6" class="bg-light">
+                                                <ol class="mb-0 ps-5">
+                                                    @foreach($questions as $question)
+                                                        <li>{{ $question->title ?? ($question->questionText ?? 'N/A') }}</li>
+                                                    @endforeach
+                                                </ol>
+                                            </td>
+                                        </tr>
+                                    @endif
+
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No assignments found</td>
                                     </tr>
-                                @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center">No unassigned sets</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="mt-2">
-                        {{ $unassignedLiveSets->links('pagination::bootstrap-5') }}
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
+                    {{ $assignedMeetings->links('pagination::bootstrap-5') }}
                 </div>
+
+                {{-- Unassigned Table --}}
+                <div class="tab-pane fade" id="unassigned">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>S.N.</th>
+                                    <th>Question Text</th>
+                                    <th>Set / Task Type</th>
+                                    <th>Created At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php $sn2 = 1; @endphp
+                                @forelse($unassignedLiveSets as $liveSet)
+                                    @foreach ($liveSet->questions ?? [] as $question)
+                                        <tr>
+                                            <td>{{ $sn2++ }}</td>
+                                            <td>{{ $question->title ?? ($question->questionText ?? 'N/A') }}</td>
+                                            <td>LiveSet</td>
+                                            <td>{{ $liveSet->created_at->format('d M, Y') }}</td>
+                                            <td>
+                                                <button class="btn btn-success btn-sm assign-btn" data-bs-toggle="modal"
+                                                    data-bs-target="#assignMeetingModal"
+                                                    data-assignable-id="{{ $liveSet->id }}"
+                                                    data-assignable-type="live">
+                                                    <i class="bi bi-link-45deg me-1"></i>Assign
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No unassigned questions</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ $unassignedLiveSets->links('pagination::bootstrap-5') }}
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Assign Modal -->
-    <div class="modal fade" id="assignMeetingModal" tabindex="-1" aria-hidden="true">
+    {{-- Assign Modal --}}
+    <div class="modal fade" id="assignMeetingModal" tabindex="-1">
         <div class="modal-dialog">
             <form id="assignMeetingForm" method="POST" action="{{ route('admin.live.assignToMeeting') }}">
                 @csrf
                 <input type="hidden" name="assignable_type" id="modal_assignable_type">
                 <input type="hidden" name="assignable_id" id="modal_assignable_id">
+
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Assign to Zoom Meeting</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Assign to Meeting</h5>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
+
                     <div class="modal-body">
-                        <label>Meeting ID</label>
-                        <input type="text" name="meeting_id" id="modal_meeting_id" class="form-control" required>
+                        <label class="form-label fw-semibold">Meeting ID</label>
+                        <input type="text" class="form-control" name="meeting_id" required>
                     </div>
+
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Assign</button>
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-success">Assign</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
-</div>
+    {{-- JS: Question toggle --}}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('.show-questions-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const row = document.getElementById('q-' + id);
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modalTypeInput = document.getElementById('modal_assignable_type');
-    const modalIdInput = document.getElementById('modal_assignable_id');
-    const assignForm = document.getElementById('assignMeetingForm');
-    const assignModal = new bootstrap.Modal(document.getElementById('assignMeetingModal'));
-    const alertContainer = document.getElementById('alertContainer');
+                    if (!row) return;
 
-    // Event delegation for assign buttons
-    document.body.addEventListener('click', function(e) {
-        const btn = e.target.closest('.assign-btn');
-        if (btn) {
-            modalTypeInput.value = btn.dataset.assignableType;
-            modalIdInput.value = btn.dataset.assignableId;
-        }
-    });
+                    const isHidden = row.style.display === "none";
+                    row.style.display = isHidden ? "table-row" : "none";
 
-    assignForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const formData = new FormData(assignForm);
-        const submitBtn = assignForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Assigning...';
-
-        fetch(assignForm.action, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json' },
-            body: formData
-        })
-        .then(async res => {
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`HTTP ${res.status}: ${text}`);
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Close modal
-                assignModal.hide();
-
-                // Remove from unassigned table
-                const unassignedTable = document.querySelector('#unassignedTable tbody');
-                unassignedTable.querySelectorAll('tr').forEach(row => {
-                    const btn = row.querySelector('.assign-btn');
-                    if (btn && btn.dataset.assignableId == formData.get('assignable_id')) {
-                        row.remove();
-                    }
+                    btn.innerHTML = isHidden ?
+                        '<i class="bi bi-chevron-up small"></i> Hide' :
+                        '<i class="bi bi-chevron-down small"></i> Questions';
                 });
+            });
 
-                // Add to assigned table
-                const assignedTable = document.querySelector('#assignedTable tbody');
-                let sn = assignedTable.children.length ?
-                    parseInt(assignedTable.children[assignedTable.children.length - 1].children[0].textContent) + 1 :
-                    1;
-
-                data.questions.forEach(q => {
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td>${sn++}</td>
-                        <td>${q.title ?? q.questionText ?? 'N/A'}</td>
-                        <td><span class="badge bg-info">${formData.get('assignable_type')}</span></td>
-                        <td class="text-success fw-semibold">${formData.get('meeting_id')}</td>
-                        <td>${data.assigned_at}</td>
-                        <td class="text-center">
-                            <div class="dropdown">
-                                <button class="btn btn-link text-dark" type="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end p-2">
-                                    <form action="/admin/live/${data.assignment_id}" method="POST" class="mt-1" onsubmit="return confirm('Delete this assignment?')">
-                                        <input type="hidden" name="_token" value="${formData.get('_token')}">
-                                        <input type="hidden" name="_method" value="DELETE">
-                                        <button class="dropdown-item text-danger">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </ul>
-                            </div>
-                        </td>
-                    `;
-                    assignedTable.appendChild(newRow);
-                });
-
-                // Show success alert
-                alertContainer.innerHTML = `
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        Meeting assigned successfully!
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-                setTimeout(() => {
-                    const alert = bootstrap.Alert.getOrCreateInstance(alertContainer.querySelector('.alert'));
-                    alert.close();
-                }, 4000);
-
-                assignForm.reset();
-            } else {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        ${data.message || 'Assignment failed!'}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-        })
-        .catch(err => {
-            console.error('Assign Meeting Error:', err);
-            alertContainer.innerHTML = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    Something went wrong! Check console.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Assign';
+            // Modal populate
+            const assignModal = document.getElementById('assignMeetingModal');
+            assignModal.addEventListener('show.bs.modal', event => {
+                const button = event.relatedTarget;
+                document.getElementById('modal_assignable_id').value = button.getAttribute('data-assignable-id');
+                document.getElementById('modal_assignable_type').value = button.getAttribute('data-assignable-type');
+            });
         });
-    });
-});
-</script>
+    </script>
 
+</div>
 @endsection

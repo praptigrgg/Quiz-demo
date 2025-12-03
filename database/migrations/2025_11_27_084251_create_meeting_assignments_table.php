@@ -18,6 +18,7 @@ return new class extends Migration
             $table->morphs('assignable'); // creates assignable_id and assignable_type
 
             $table->timestamp('assigned_at')->nullable();
+            $table->integer('timer')->nullable();
             $table->timestamps();
         });
     }
