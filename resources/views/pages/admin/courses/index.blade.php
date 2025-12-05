@@ -95,6 +95,11 @@
                                             </a>
                                         </li>
                                         <li>
+                                            <a href="{{ route('admin.courses.show', $course->id) }}" class="dropdown-item">
+                                                <i class="bi bi-layers"></i> Show
+                                            </a>
+                                        </li>
+                                        <li>
                                             <form action="{{ route('admin.courses.destroy', $course->id) }}" method="POST" onsubmit="return confirm('Delete this course?')">
                                                 @csrf
                                                 @method('DELETE')
