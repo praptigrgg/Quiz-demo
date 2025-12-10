@@ -181,75 +181,114 @@
 </style>
 
 <ul class="menu-inner py-2">
+
     {{-- Dashboard --}}
-    <li class="menu-item">
+    <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <a href="{{ route('dashboard') }}" class="menu-link">
             <i class="menu-icon tf-icons bx bx-home-circle"></i>
-            <span data-i18n="Analytics">Dashboard</span>
+            <span>Dashboard</span>
         </a>
     </li>
 
-
-
     {{-- Course Management --}}
-    <li class="menu-item">
+    @php $courseOpen = request()->is('admin/courses*'); @endphp
+    <li class="menu-item {{ $courseOpen ? 'open' : '' }}">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
             <i class="menu-icon tf-icons bx bx-book"></i>
-            <div data-i18n="Course Management">Course Management</div>
+            <div>Course Management</div>
         </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="{{ route('admin.courses.index') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-list-ul"></i>
+
+        <ul class="menu-sub" style="display: {{ $courseOpen ? 'block' : 'none' }};">
+            <li class="menu-item">
+                <a href="{{ route('admin.courses.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-list-ul"></i>
                     <div>Courses List</div>
-                </a></li>
-            <li class="menu-item"><a href="{{ route('admin.courses.create') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-plus"></i>
+                </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="{{ route('admin.courses.create') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-plus"></i>
                     <div>Add Course</div>
-                </a></li>
+                </a>
+            </li>
         </ul>
     </li>
 
-
-
     {{-- Quiz Management --}}
-    <li class="menu-item open">
+    @php $quizOpen = request()->is('admin/quizzes*'); @endphp
+    <li class="menu-item {{ $quizOpen ? 'open' : '' }}">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
             <i class="menu-icon tf-icons bx bx-clipboard"></i>
-            <div data-i18n="Quiz Management">Quiz Management</div>
+            <div>Quiz Management</div>
         </a>
-        <ul class="menu-sub" style="display:block;">
+
+        <ul class="menu-sub" style="display: {{ $quizOpen ? 'block' : 'none' }};">
             <li class="menu-item">
                 <a href="{{ route('admin.quizzes.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-list-ul"></i>
                     <span>Quizzes List</span>
                 </a>
             </li>
-            <li class="menu-item"><a href="{{ route('admin.quizzes.create') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-plus"></i><span>Add Quiz</span></a></li>
+
+            <li class="menu-item">
+                <a href="{{ route('admin.quizzes.create') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-plus"></i>
+                    <span>Add Quiz</span>
+                </a>
+            </li>
         </ul>
     </li>
 
-
-    <li class="menu-item">
+    {{-- Live Assignment --}}
+    @php $liveOpen = request()->is('admin/live/assign*'); @endphp
+    <li class="menu-item {{ $liveOpen ? 'open' : '' }}">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
             <i class="menu-icon tf-icons bx bx-book"></i>
-            <div data-i18n="Assign To Zoom">Live Assignment</div>
+            <div>Live Assignment</div>
         </a>
-        <ul class="menu-sub" style="display:none;">
-            <li class="menu-item"><a href="{{ route('admin.live.assign.index') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-list-ul"></i>
+
+        <ul class="menu-sub" style="display: {{ $liveOpen ? 'block' : 'none' }};">
+            <li class="menu-item">
+                <a href="{{ route('admin.live.assign.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-list-ul"></i>
                     <div>Assignment List</div>
                 </a>
             </li>
-            <li class="menu-item"><a href="{{ route('admin.live.assign.page') }}" class="menu-link"><i
-                        class="menu-icon tf-icons bx bx-plus"></i>
+
+            <li class="menu-item">
+                <a href="{{ route('admin.live.assign.page') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-plus"></i>
                     <div>Assign Live</div>
                 </a>
             </li>
-
         </ul>
     </li>
 
+    {{-- Certificate Management --}}
+    @php $certOpen = request()->is('admin/certificates*'); @endphp
+    <li class="menu-item {{ $certOpen ? 'open' : '' }}">
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-award"></i>
+            <div>Certificate Management</div>
+        </a>
+
+        <ul class="menu-sub" style="display: {{ $certOpen ? 'block' : 'none' }};">
+            <li class="menu-item">
+                <a href="{{ route('admin.certificates.list') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-list-ul"></i>
+                    <div>Certificates List</div>
+                </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="{{ route('admin.certificates.form') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-plus"></i>
+                    <div>Create Certificate</div>
+                </a>
+            </li>
+        </ul>
+    </li>
 
 </ul>
 
