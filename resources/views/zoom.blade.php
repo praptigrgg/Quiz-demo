@@ -7,162 +7,139 @@
 
     <!-- Zoom SDK CSS -->
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/3.12.0/css/bootstrap.css" />
-<style>
-    /* General body/layout */
-    html, body {
-        height: 100%;
-        margin: 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #000;
-        color: #fff;
-    }
 
-    #layout {
-        display: flex;
-        height: 100vh;
-        overflow: hidden;
-    }
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    #meeting-wrapper {
-        flex: 1 1 100%;
-        transition: flex-basis 0.3s ease;
-    }
+        #layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+        }
 
-    #popup-container {
-        flex: 0 0 0;
-        max-width: 0;
-        height: 100%;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        padding: 0;
-        box-sizing: border-box;
-        transition: flex-basis 0.3s ease, max-width 0.3s ease, padding 0.3s ease;
-        background: #0b1a12;
-    }
+        #meeting-wrapper {
+            flex: 1 1 100%;
+            height: 100%;
+            background: #000;
+            transition: flex-basis 0.3s ease;
+        }
 
-    body.quiz-open #meeting-wrapper {
-        flex: 0 0 60%;
-    }
+        #zmmtg-root {
+            width: 100% !important;
+            height: 100% !important;
+            position: relative !important;
+            background: #000;
+        }
 
-    body.quiz-open #popup-container {
-        flex: 0 0 40%;
-        max-width: 40%;
-        padding: 20px;
-        box-shadow: -4px 0 20px rgba(0,0,0,0.5);
-    }
+        #popup-container {
+            flex: 0 0 0;
+            max-width: 0;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0;
+            box-sizing: border-box;
+            transition: flex-basis 0.3s ease, max-width 0.3s ease, padding 0.3s ease;
+        }
 
-    /* Popup card */
-    .broadcast-popup {
-        background: #1b2c21;
-        color: #fff;
-        padding: 20px 24px;
-        border-radius: 12px;
-        max-width: 100%;
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        transform: translateY(-16px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        margin-top: 16px;
-        border-left: 4px solid #00e676;
-    }
+        body.quiz-open #meeting-wrapper {
+            flex: 0 0 60%;
+        }
 
-    .broadcast-popup.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
+        body.quiz-open #popup-container {
+            flex: 0 0 40%;
+            max-width: 40%;
+            padding: 20px;
+            background: linear-gradient(180deg, #0a2a1b, #04331d);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+        }
 
-    .broadcast-popup h3 {
-        margin-top: 0;
-        margin-bottom: 16px;
-        font-size: 1.5rem;
-        color: #00e676;
-    }
+        .broadcast-popup {
+            background: #50665e;
+            color: #fff;
+            padding: 20px 24px;
+            border-radius: 14px;
+            max-width: 100%;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+            opacity: 0;
+            transform: translateY(-16px);
+            transition: opacity .3s ease, transform .3s ease;
+            pointer-events: auto;
+            margin-top: 16px;
+            border-left: 4px solid #00e676;
+        }
 
-    .broadcast-popup p {
-        margin-bottom: 16px;
-        line-height: 1.6;
-        color: #cfd8dc;
-    }
+        .broadcast-popup.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-    /* Timer */
-    #countdownTimer {
-        font-weight: bold;
-        color: #ffd600;
-        margin-bottom: 16px;
-        font-size: 1rem;
-    }
+        .broadcast-popup h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+        }
 
-    /* Quiz options */
-    .quiz-question {
-        background: #24332a;
-        padding: 14px 16px;
-        margin-bottom: 14px;
-        border-radius: 10px;
-    }
+        .broadcast-popup p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
 
-    .quiz-question p {
-        margin: 0 0 8px 0;
-        font-weight: 500;
-    }
+        .quiz-option-label {
+            display: block;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.05);
+            transition: background 0.2s, transform 0.2s;
+        }
 
-    .quiz-option-label {
-        display: block;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        border-radius: 8px;
-        cursor: pointer;
-        background: rgba(255,255,255,0.05);
-        transition: background 0.2s, transform 0.2s;
-        user-select: none;
-    }
+        .quiz-option-label:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(3px);
+        }
 
-    .quiz-option-label:hover {
-        background: rgba(0,230,118,0.2);
-        transform: translateX(2px);
-    }
+        .quiz-option-label input {
+            margin-right: 10px;
+        }
 
-    .quiz-option-label input {
-        margin-right: 10px;
-    }
+        #submitQuizBtn {
+            margin-top: 16px;
+            padding: 10px 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: #00e676;
+            color: #000;
+            transition: background 0.2s, transform 0.2s;
+        }
 
-    textarea {
-        width: 100%;
-        height: 60px;
-        border-radius: 8px;
-        padding: 8px;
-        border: none;
-        background: #324036;
-        color: #fff;
-        resize: vertical;
-    }
+        #submitQuizBtn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
 
-    /* Submit button */
-    #submitQuizBtn {
-        margin-top: 16px;
-        padding: 12px 20px;
-        font-weight: bold;
-        cursor: pointer;
-        border: none;
-        border-radius: 8px;
-        background: #00e676;
-        color: #000;
-        font-size: 1rem;
-        transition: background 0.2s, transform 0.2s;
-    }
+        #submitQuizBtn:hover:not(:disabled) {
+            background: #00c853;
+            transform: scale(1.03);
+        }
 
-    #submitQuizBtn:disabled {
-        background: #555;
-        cursor: not-allowed;
-    }
-
-    #submitQuizBtn:hover:not(:disabled) {
-        background: #00c853;
-        transform: scale(1.03);
-    }
-</style>
-
+        #countdownTimer {
+            font-weight: bold;
+            color: #ffd600;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
 
