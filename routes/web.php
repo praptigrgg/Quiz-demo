@@ -83,6 +83,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('quizzes/{id}/assign', [QuizController::class, 'assignQuiz'])
         ->name('quizzes.assign');
 
+
+        
     //Certificates
     Route::get('/certificates/form', function () {
         return view('admin.certificates.upload_form');

@@ -77,56 +77,99 @@ class LiveSetController extends Controller
         return $liveSet;
     }
 
+
     /**
-     * Assign Live Set or Quiz to a meeting
+     * Assign Live Set or Quiz to a meeting (supports single or multiple IDs)
      */
-    public function assignToMeeting(Request $request)
-    {
-        $request->validate([
+public function assignToMeeting(Request $request)
+{
+    try {
+        // Validate the incoming request
+        $validated = $request->validate([
             'meeting_id' => 'required|string',
             'assignable_type' => 'required|in:quiz,live',
-            'assignable_id' => 'required|integer',
-            // ⭐ TIMER VALIDATION ADDED
+            'assignable_id' => 'required|string', // comma-separated IDs
             'timer' => 'nullable|integer|min:1',
         ]);
 
-        $modelClass = $request->assignable_type === 'quiz' ? Quiz::class : LiveSet::class;
-        $assignable = $modelClass::with('questions')->findOrFail($request->assignable_id);
+        // Split and clean IDs
+        $assignableIds = collect(explode(',', $validated['assignable_id']))
+            ->filter(fn($id) => !empty($id))    // Remove empty values
+            ->unique()                           // Remove duplicates
+            ->values()
+            ->all();
 
-        $assignment = MeetingAssignment::updateOrCreate(
-            [
-                'assignable_type' => $modelClass,
+        if (empty($assignableIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid items selected to assign.'
+            ], 422);
+        }
+
+        $modelClass = $validated['assignable_type'] === 'quiz' ? Quiz::class : LiveSet::class;
+        $assignments = [];
+
+        foreach ($assignableIds as $id) {
+            $assignable = $modelClass::with('questions')->find($id);
+
+            if (!$assignable) {
+                continue; // skip invalid IDs
+            }
+
+            $assignment = MeetingAssignment::updateOrCreate(
+                [
+                    'assignable_type' => $modelClass,
+                    'assignable_id' => $assignable->id,
+                ],
+                [
+                    'meeting_id' => $validated['meeting_id'],
+                    'assigned_at' => now(),
+                    'timer' => $validated['timer'] ?? $assignable->timer ?? null,
+                ]
+            );
+
+            event(new ActivityAssigned($assignment));
+            Log::info("Broadcasting ActivityAssigned event for assignment ID: {$assignment->id}");
+
+            $assignments[] = [
+                'assignment_id' => $assignment->id,
                 'assignable_id' => $assignable->id,
-            ],
-            [
-                'meeting_id' => $request->meeting_id,
-                'assigned_at' => now(),
-
-                // ⭐ STORE TIMER IN ASSIGNMENT
-                'timer' => $request->timer ?? $assignable->timer ?? null,
-            ]
-        );
-
-        $questions = $assignable->questions->map(function ($q) use ($request) {
-            return [
-                'id' => $q->id,
-                'title' => $q->title ?? null,
-                'questionText' => $q->questionText ?? null,
-                'type' => class_basename($q->assignable_type ?? $request->assignable_type),
+                'timer' => $assignment->timer,
             ];
-        });
+        }
 
-        event(new ActivityAssigned($assignment));
-        Log::info("Broadcasting ActivityAssigned event for Zoom assignment ID: {$assignment->id}");
+        if (empty($assignments)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid assignments were created.'
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
-            'assigned_at' => $assignment->assigned_at->format('d M, Y h:i A'),
-            'questions' => $questions,
-            'assignment_id' => $assignment->id,
-            'timer' => $assignment->timer // ⭐ RETURN ADDED
+            'assigned_at' => now()->format('d M, Y h:i A'),
+            'assignments' => $assignments,
+            'message' => count($assignments) > 1 ? 'Live Sets assigned successfully!' : 'Live Set assigned successfully!',
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'errors' => $e->errors(),
+            'message' => 'Validation failed',
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error assigning meeting: '.$e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred.',
+        ], 500);
     }
+}
+
+
+
+
 
 
     /**
@@ -191,26 +234,26 @@ class LiveSetController extends Controller
         return response()->json($quizzes);
     }
 
-   public function participants($assignmentId)
-{
-    $assignment = MeetingAssignment::with(['responses.student'])->findOrFail($assignmentId);
+    public function participants($assignmentId)
+    {
+        $assignment = MeetingAssignment::with(['responses.student'])->findOrFail($assignmentId);
 
-    // Get unique students who have responses, with fastest elapsed_time
-    $participants = $assignment->responses
-        ->groupBy('student_id')
-        ->map(function ($responses, $studentId) {
-            $student = $responses->first()->student;
-            $student->firstResponse = $responses->sortBy('elapsed_time')->first(); // fastest response
-            $student->elapsed_time = $student->firstResponse?->elapsed_time;       // store elapsed time
-            return $student;
-        })
-        ->sortBy(function ($student) {
-            return $student->elapsed_time ?? PHP_INT_MAX; // fastest first
-        })
-        ->values(); // reset keys
+        // Get unique students who have responses, with fastest elapsed_time
+        $participants = $assignment->responses
+            ->groupBy('student_id')
+            ->map(function ($responses, $studentId) {
+                $student = $responses->first()->student;
+                $student->firstResponse = $responses->sortBy('elapsed_time')->first(); // fastest response
+                $student->elapsed_time = $student->firstResponse?->elapsed_time;       // store elapsed time
+                return $student;
+            })
+            ->sortBy(function ($student) {
+                return $student->elapsed_time ?? PHP_INT_MAX; // fastest first
+            })
+            ->values(); // reset keys
 
-    return view('pages.admin.live.participants', compact('assignment', 'participants'));
-}
+        return view('pages.admin.live.participants', compact('assignment', 'participants'));
+    }
 
 
 
